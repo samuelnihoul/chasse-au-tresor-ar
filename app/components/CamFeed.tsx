@@ -35,7 +35,7 @@ const CameraFeed: React.FC = () => {
             ref={videoRef}
             autoPlay
             playsInline
-            style={{ width: '100%', height: 'auto', marginTop: '20px' }}
+            style={{ width: '50%', height: 'auto', marginTop: '20px' ,display:'flex',justifyContent:'center',alignItems:'center',border:'1px solid #ccc'}}
         />
     );
 };
