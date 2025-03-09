@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build ",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:generate": "drizzle-kit generate:pg",
+    "db:push": "drizzle-kit push:pg"
   },
   "dependencies": {
     "drizzle-orm": "^0.40.0",
