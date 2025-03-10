@@ -28,7 +28,14 @@ const UserLocation: React.FC = () => {
     }, []);
 
     const calculateDistanceToNorthPole = (latitude: number) => {
-        const distance = 6371 * (90 - latitude); // 6371 est le rayon de la Terre en km
+        const northPoleLatitude = 90;
+        const latitudeInRadians = (latitude * Math.PI) / 180;
+        const northPoleLatitudeInRadians = (northPoleLatitude * Math.PI) / 180;
+        // formule de Harvesine pour calculer la distance entre deux points sur une sphère
+        const distance = 6371 * Math.acos(
+            Math.sin(latitudeInRadians) * Math.sin(northPoleLatitudeInRadians) +
+            Math.cos(latitudeInRadians) * Math.cos(northPoleLatitudeInRadians)
+        );
         setDistanceToNorthPole(distance);
     };
 

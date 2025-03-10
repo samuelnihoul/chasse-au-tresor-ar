@@ -1,4 +1,4 @@
-import result from '@/lib/drizzle'
+import result from '@/db/drizzle'
 export default function Admin() {
     return (
         <div>

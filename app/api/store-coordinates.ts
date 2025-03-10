@@ -3,7 +3,6 @@ import { Pool } from 'pg';
 
 // Retrieve the connection string from environment variables
 const connectionString = process.env.DATABASE_URL;
-
 const pool = new Pool({
     connectionString: connectionString,
 });
@@ -11,7 +10,7 @@ const pool = new Pool({
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'POST') {
         const { latitude, longitude } = req.body;
-
+        console.log('Received coordinates:', latitude, longitude);
         try {
             const result = await pool.query(
                 'INSERT INTO coordinates (latitude, longitude) VALUES ($1, $2)',
