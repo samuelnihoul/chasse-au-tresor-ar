@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Pool } from 'pg';
+import { getAllCoordinates } from '@/db/queries';
 
 // Retrieve the connection string from environment variables
 const connectionString = process.env.DATABASE_URL;
@@ -21,5 +22,16 @@ export async function POST(req: NextRequest) {
     } catch (error) {
         console.error('Error storing coordinates:', error);
         return NextResponse.json({ message: 'Error storing coordinates.' }, { status: 500 });
+    }
+}
+export async function GET() {
+    try {
+        const coordinates = await getAllCoordinates();
+        return NextResponse.json(coordinates);
+    } catch (error) {
+        return NextResponse.json(
+            { error: 'Failed to fetch coordinates' },
+            { status: 500 }
+        );
     }
 }

@@ -28,9 +28,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-      <nav className="p-4 border-b ">
-        <Link href="/admin">Admin</Link>
-      </nav>
+        <nav className="p-4 border-b flex justify-between">
+          <Link href="/admin">Admin</Link>
+          <Link href='/'>Home</Link>
+        </nav>
         {children}
       </body>
     </html>
