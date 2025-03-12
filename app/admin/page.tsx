@@ -7,6 +7,9 @@ interface Coordinate {
     latitude: number;
     longitude: number;
     createdAt: string;
+    hintNumber: number;
+    hint: string;
+    gameMap: string;
 }
 
 export default function Admin() {
@@ -38,6 +41,9 @@ export default function Admin() {
                         <p>Latitude: {coord.latitude}</p>
                         <p>Longitude: {coord.longitude}</p>
                         <p>Created: {new Date(coord.createdAt).toLocaleString()}</p>
+                        <p>Indice: {coord.hint}</p>
+                        <p>Carte du jeu: {coord.gameMap}</p>
+                        <p>Numéro de l'indice: {coord.hintNumber}</p>
                     </div>
                 ))}
             </div>
