@@ -5,7 +5,7 @@ export const coordinates = pgTable('coordinates', {
     latitude: decimal('latitude', { precision: 10, scale: 7 }).notNull(),
     longitude: decimal('longitude', { precision: 10, scale: 7 }).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    gameMap: varchar('game_map', { length: 255 }).notNull(),
-    hintNumber: integer('hint_number').notNull(),
-    hint: varchar('hint', { length: 255 }).notNull()
+    gameMap: varchar('game_map', { length: 255 }).notNull().default("pas encore défini"),
+    hintNumber: integer('hint_number').notNull().default(-1),
+    hint: varchar('hint', { length: 255 }).notNull().default("pas encore défini")
 });

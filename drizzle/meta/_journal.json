@@ -15,6 +15,13 @@
       "when": 1741720605758,
       "tag": "0001_confused_gamora",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1741769654955,
+      "tag": "0002_bizarre_franklin_storm",
+      "breakpoints": true
     }
   ]
 }
