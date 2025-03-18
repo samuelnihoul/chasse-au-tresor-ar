@@ -33,7 +33,7 @@ export default function Admin() {
         };
 
         fetchCoordinates();
-        const interval = setInterval(fetchCoordinates, 3000);
+        const interval = setInterval(fetchCoordinates, 100000);
         return () => clearInterval(interval);
     }, []);
 
