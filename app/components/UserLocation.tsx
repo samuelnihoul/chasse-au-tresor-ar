@@ -46,7 +46,7 @@ const UserLocation: React.FC = () => {
                 <>
                     <p>Latitude : {location.latitude}</p>
                     <p>Longitude : {location.longitude}</p>
-                    <p>Distance au pôle Nord : {distanceToNorthPole?.toFixed(2)} km</p>
+                    <p>Distance au prochain indice {distanceToNorthPole?.toFixed(2)} km</p>
                 </>
             ) : (
                 <p>Obtention des coordonnées...</p>
