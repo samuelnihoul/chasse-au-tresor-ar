@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import GameZoneSelector from './GameZoneSelector';
 
 const StoreCoordinatesButton: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [password, setPassword] = useState('');
     const [showPasswordInput, setShowPasswordInput] = useState(false);
+    const [selectedZone, setSelectedZone] = useState<string>();
 
     const handleAuthentication = () => {
         if (password === 'admin123') { // Mot de passe simple pour la démonstration
@@ -20,6 +22,11 @@ const StoreCoordinatesButton: React.FC = () => {
     const handleStoreCoordinates = async () => {
         if (!isAuthenticated) {
             setShowPasswordInput(true);
+            return;
+        }
+
+        if (!selectedZone) {
+            alert('Veuillez sélectionner une zone de jeu');
             return;
         }
 
@@ -42,7 +49,11 @@ const StoreCoordinatesButton: React.FC = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ latitude, longitude }),
+                body: JSON.stringify({
+                    latitude,
+                    longitude,
+                    zoneId: selectedZone
+                }),
             });
 
             const data = await response.json();
@@ -62,6 +73,10 @@ const StoreCoordinatesButton: React.FC = () => {
 
     return (
         <div className="flex flex-col items-center gap-4">
+            <GameZoneSelector
+                onZoneSelect={setSelectedZone}
+                currentZone={selectedZone}
+            />
             {showPasswordInput && !isAuthenticated && (
                 <div className="flex flex-col items-center gap-2">
                     <input
@@ -81,7 +96,7 @@ const StoreCoordinatesButton: React.FC = () => {
             )}
             <button
                 onClick={handleStoreCoordinates}
-                disabled={isLoading}
+                disabled={isLoading || !selectedZone}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
             >
                 {isLoading ? 'Storing...' : 'Enregistrer les coordonnées'}
