@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import AdminProtection from '../components/AdminProtection';
-import StoreCoordinatesButton from '../components/StoreCoordinatesButton';
-import GameZoneSelector from '../components/GameZoneSelector';
 
 interface Coordinate {
     id: number;
@@ -22,8 +20,7 @@ export default function AdminPage() {
     const [editForm, setEditForm] = useState({
         hintNumber: 0,
         hint: '',
-        gameMap: '',
-        zoneId: ''
+        gameMap: ''
     });
 
     useEffect(() => {
@@ -47,8 +44,7 @@ export default function AdminPage() {
         setEditForm({
             hintNumber: coord.hintNumber,
             hint: coord.hint,
-            gameMap: coord.gameMap,
-            zoneId: coord.zoneId
+            gameMap: coord.gameMap
         });
     };
 
@@ -81,11 +77,6 @@ export default function AdminPage() {
         <AdminProtection>
             <div className="container mx-auto px-4 py-8">
                 <h1 className="text-2xl font-bold mb-6 text-gray-900">Administration</h1>
-                <div className="bg-white rounded-lg shadow p-6 mb-8">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-900">Enregistrement des coordonnées</h2>
-                    <StoreCoordinatesButton />
-                </div>
-
                 <div className="bg-white rounded-lg shadow p-6">
                     <h2 className="text-xl font-semibold mb-4 text-gray-900">Liste des coordonnées</h2>
                     <div className="space-y-4">
@@ -101,15 +92,6 @@ export default function AdminPage() {
                                 {editingId === coord.id ? (
                                     <>
                                         <div className="space-y-2 mt-2">
-                                            <div className="mb-4">
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    Zone de jeu
-                                                </label>
-                                                <GameZoneSelector
-                                                    onZoneSelect={(zoneId) => setEditForm({ ...editForm, zoneId })}
-                                                    currentZone={editForm.zoneId}
-                                                />
-                                            </div>
                                             <input
                                                 type="number"
                                                 value={editForm.hintNumber}
