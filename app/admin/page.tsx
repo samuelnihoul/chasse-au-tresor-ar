@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import AdminProtection from '../components/AdminProtection';
 import StoreCoordinatesButton from '../components/StoreCoordinatesButton';
+import GameZoneSelector from '../components/GameZoneSelector';
 
 interface Coordinate {
     id: number;
@@ -21,7 +22,8 @@ export default function AdminPage() {
     const [editForm, setEditForm] = useState({
         hintNumber: 0,
         hint: '',
-        gameMap: ''
+        gameMap: '',
+        zoneId: ''
     });
 
     useEffect(() => {
@@ -45,7 +47,8 @@ export default function AdminPage() {
         setEditForm({
             hintNumber: coord.hintNumber,
             hint: coord.hint,
-            gameMap: coord.gameMap
+            gameMap: coord.gameMap,
+            zoneId: coord.zoneId
         });
     };
 
@@ -77,25 +80,36 @@ export default function AdminPage() {
     return (
         <AdminProtection>
             <div className="container mx-auto px-4 py-8">
-                <h1 className="text-2xl font-bold mb-6">Administration</h1>
+                <h1 className="text-2xl font-bold mb-6 text-gray-900">Administration</h1>
                 <div className="bg-white rounded-lg shadow p-6 mb-8">
-                    <h2 className="text-xl font-semibold mb-4">Enregistrement des coordonnées</h2>
+                    <h2 className="text-xl font-semibold mb-4 text-gray-900">Enregistrement des coordonnées</h2>
                     <StoreCoordinatesButton />
                 </div>
 
                 <div className="bg-white rounded-lg shadow p-6">
-                    <h2 className="text-xl font-semibold mb-4">Liste des coordonnées</h2>
+                    <h2 className="text-xl font-semibold mb-4 text-gray-900">Liste des coordonnées</h2>
                     <div className="space-y-4">
                         {coordinates.map((coord) => (
                             <div key={coord.id} className="border p-4 rounded-lg shadow">
-                                <p>Latitude: {coord.latitude}</p>
-                                <p>Longitude: {coord.longitude}</p>
-                                <p>Zone: {coord.zoneId}</p>
-                                <p>Créé le: {new Date(coord.createdAt).toLocaleString()}</p>
+                                <div className="text-gray-900">
+                                    <p>Latitude: {coord.latitude}</p>
+                                    <p>Longitude: {coord.longitude}</p>
+                                    <p>Zone: {coord.zoneId}</p>
+                                    <p>Créé le: {new Date(coord.createdAt).toLocaleString()}</p>
+                                </div>
 
                                 {editingId === coord.id ? (
                                     <>
                                         <div className="space-y-2 mt-2">
+                                            <div className="mb-4">
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                    Zone de jeu
+                                                </label>
+                                                <GameZoneSelector
+                                                    onZoneSelect={(zoneId) => setEditForm({ ...editForm, zoneId })}
+                                                    currentZone={editForm.zoneId}
+                                                />
+                                            </div>
                                             <input
                                                 type="number"
                                                 value={editForm.hintNumber}
@@ -103,7 +117,7 @@ export default function AdminPage() {
                                                     ...editForm,
                                                     hintNumber: e.target.value === '' ? 0 : parseInt(e.target.value)
                                                 })}
-                                                className="border p-1 w-full"
+                                                className="border p-2 w-full rounded text-gray-900"
                                                 placeholder="Numéro de l'indice"
                                             />
                                             <input
@@ -113,7 +127,7 @@ export default function AdminPage() {
                                                     ...editForm,
                                                     hint: e.target.value
                                                 })}
-                                                className="border p-1 w-full"
+                                                className="border p-2 w-full rounded text-gray-900"
                                                 placeholder="Indice"
                                             />
                                             <input
@@ -123,19 +137,19 @@ export default function AdminPage() {
                                                     ...editForm,
                                                     gameMap: e.target.value
                                                 })}
-                                                className="border p-1 w-full"
+                                                className="border p-2 w-full rounded text-gray-900"
                                                 placeholder="Carte du jeu"
                                             />
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => handleSave(coord.id)}
-                                                    className="bg-green-500 text-white px-4 py-2 rounded"
+                                                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
                                                 >
                                                     Sauvegarder
                                                 </button>
                                                 <button
                                                     onClick={() => setEditingId(null)}
-                                                    className="bg-gray-500 text-white px-4 py-2 rounded"
+                                                    className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
                                                 >
                                                     Annuler
                                                 </button>
@@ -144,12 +158,14 @@ export default function AdminPage() {
                                     </>
                                 ) : (
                                     <>
-                                        <p>Indice: {coord.hint}</p>
-                                        <p>Carte du jeu: {coord.gameMap}</p>
-                                        <p>Numéro de l'indice: {coord.hintNumber}</p>
+                                        <div className="text-gray-900">
+                                            <p>Indice: {coord.hint}</p>
+                                            <p>Carte du jeu: {coord.gameMap}</p>
+                                            <p>Numéro de l'indice: {coord.hintNumber}</p>
+                                        </div>
                                         <button
                                             onClick={() => handleEdit(coord)}
-                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2 hover:bg-blue-600"
                                         >
                                             Modifier
                                         </button>
