@@ -43,13 +43,13 @@ export default function Home() {
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col">
-            <div className="flex-1 relative">
-                <CameraFeed />
-                <div className="absolute bottom-4 left-4 right-4 flex flex-col gap-4">
-                    <UserLocation />
-                    <StoreCoordinatesButton />
-
-                </div>
+            <h1 className='text-center text-3xl font-bold py-6 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 bg-clip-text text-transparent drop-shadow-lg transform hover:scale-105 transition-transform duration-300'>
+                Enquête avec Youssouf
+            </h1>
+            <CameraFeed />
+            <div className="absolute bottom-4 left-4 right-4 flex flex-col gap-4">
+                <UserLocation />
+                <StoreCoordinatesButton />
             </div>
         </div>
     );

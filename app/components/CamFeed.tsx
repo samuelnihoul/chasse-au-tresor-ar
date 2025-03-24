@@ -31,12 +31,13 @@ const CameraFeed: React.FC = () => {
     }, []);
 
     return (
-        <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            style={{ width: '50%', height: 'auto', marginTop: '20px' ,display:'flex',justifyContent:'center',alignItems:'center',border:'1px solid #ccc'}}
-        />
+        <div className='relative flex justify-center items-center '>
+            <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                style={{ width: '50%', height: 'auto', marginTop: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid #ccc' }}
+            /></div>
     );
 };
 
