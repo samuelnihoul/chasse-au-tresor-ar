@@ -1,6 +1,7 @@
 'use client';
-// app/components/UserLocation.ts
+
 import React, { useEffect, useState } from 'react';
+import { useHints, calculateDistance } from '../hooks/useHints';
 
 interface Location {
     latitude: number | null;
@@ -15,21 +16,23 @@ interface Position {
 
 const UserLocation: React.FC = () => {
     const [location, setLocation] = useState<Location>({ latitude: null, longitude: null });
-    const [distanceToNorthPole, setDistanceToNorthPole] = useState<number | null>(null);
     const [totalDistance, setTotalDistance] = useState<number>(0);
     const [previousPositions, setPreviousPositions] = useState<Position[]>([]);
+    const [isNearHint, setIsNearHint] = useState<boolean>(false);
+    
+    // Utiliser le hook useHints pour gérer les indices
+    const { 
+        hints, 
+        setHints, 
+        getCurrentHint, 
+        getNextHint, 
+        nextHint, 
+        distanceToNextHint, 
+        setDistanceToNextHint 
+    } = useHints();
 
-    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-        const R = 6371; // Rayon de la Terre en km
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    };
+    // Seuil de proximité pour considérer qu'un utilisateur a atteint un indice (en mètres)
+    const PROXIMITY_THRESHOLD = 20;
 
     const getLocation = () => {
         if (navigator.geolocation) {
@@ -39,7 +42,29 @@ const UserLocation: React.FC = () => {
 
                 // Mettre à jour la position actuelle
                 setLocation({ latitude, longitude });
-                calculateDistanceToNorthPole(latitude);
+                
+                // Calculer la distance jusqu'au prochain indice
+                const nextHint = getNextHint();
+                if (nextHint && latitude && longitude) {
+                    const distance = calculateDistance(
+                        latitude,
+                        longitude,
+                        nextHint.latitude,
+                        nextHint.longitude
+                    );
+                    setDistanceToNextHint(distance);
+                    
+                    // Vérifier si l'utilisateur est proche de l'indice suivant
+                    if (distance < PROXIMITY_THRESHOLD) {
+                        setIsNearHint(true);
+                        // Si c'est la première fois qu'on détecte la proximité, passer à l'indice suivant
+                        if (!isNearHint) {
+                            nextHint();
+                        }
+                    } else {
+                        setIsNearHint(false);
+                    }
+                }
 
                 // Calculer la distance depuis la dernière position
                 if (previousPositions.length > 0) {
@@ -50,7 +75,7 @@ const UserLocation: React.FC = () => {
                         latitude,
                         longitude
                     );
-                    setTotalDistance(prev => prev + distance);
+                    setTotalDistance(prev => prev + distance / 1000); // Convertir en km pour l'affichage
                 }
 
                 // Mettre à jour l'historique des positions
@@ -65,6 +90,29 @@ const UserLocation: React.FC = () => {
         }
     };
 
+    // Charger les indices depuis l'API
+    useEffect(() => {
+        const fetchHints = async () => {
+            try {
+                const response = await fetch('/api/store-coordinates');
+                const data = await response.json();
+                // Filtrer les données pour ne garder que les indices valides
+                const validHints = data.filter((hint: any) => 
+                    hint.hintNumber >= 0 && 
+                    hint.hint !== "pas encore défini" &&
+                    hint.gameMap !== "pas encore défini"
+                );
+                setHints(validHints);
+            } catch (error) {
+                console.error('Error fetching hints:', error);
+            }
+        };
+
+        fetchHints();
+        const interval = setInterval(fetchHints, 10000); // Rafraîchir les indices toutes les 10 secondes
+        return () => clearInterval(interval);
+    }, [setHints]);
+
     useEffect(() => {
         // Première récupération
         getLocation();
@@ -76,16 +124,9 @@ const UserLocation: React.FC = () => {
         return () => clearInterval(interval);
     }, []);
 
-    const calculateDistanceToNorthPole = (latitude: number) => {
-        const northPoleLatitude = 90;
-        const latitudeInRadians = (latitude * Math.PI) / 180;
-        const northPoleLatitudeInRadians = (northPoleLatitude * Math.PI) / 180;
-        const distance = 6371 * Math.acos(
-            Math.sin(latitudeInRadians) * Math.sin(northPoleLatitudeInRadians) +
-            Math.cos(latitudeInRadians) * Math.cos(northPoleLatitudeInRadians)
-        );
-        setDistanceToNorthPole(distance);
-    };
+    // Obtenir l'indice actuel
+    const currentHint = getCurrentHint();
+    const nextHintObj = getNextHint();
 
     return (
         <div className="bg-black bg-opacity-50 backdrop-blur-sm rounded-lg p-4 text-white">
@@ -94,7 +135,30 @@ const UserLocation: React.FC = () => {
                 <>
                     <p>Latitude : {location.latitude.toFixed(6)}°</p>
                     <p>Longitude : {location.longitude.toFixed(6)}°</p>
-                    <p className="mt-2">Distance au prochain indice : {distanceToNorthPole?.toFixed(2)} km</p>
+                    
+                    {currentHint && (
+                        <div className="mt-2 p-2 bg-purple-900 bg-opacity-50 rounded">
+                            <p className="font-bold">Indice actuel ({currentHint.hintNumber}):</p>
+                            <p>{currentHint.hint}</p>
+                            <p className="text-sm">Carte: {currentHint.gameMap}</p>
+                        </div>
+                    )}
+                    
+                    {nextHintObj && distanceToNextHint !== null && (
+                        <div className="mt-2">
+                            <p className="font-semibold">Prochain indice: #{nextHintObj.hintNumber}</p>
+                            <p>Distance: {(distanceToNextHint < 1000) 
+                                ? `${distanceToNextHint.toFixed(0)} m` 
+                                : `${(distanceToNextHint / 1000).toFixed(2)} km`}
+                            </p>
+                            {isNearHint && (
+                                <p className="text-green-400 font-bold animate-pulse">
+                                    Vous êtes arrivé à l'indice!
+                                </p>
+                            )}
+                        </div>
+                    )}
+                    
                     <p className="mt-2">Distance totale parcourue : {totalDistance.toFixed(2)} km</p>
                 </>
             ) : (

@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import UserLocation from './components/UserLocation';
 import CameraFeed from './components/CamFeed';
 import StoreCoordinatesButton from './components/StoreCoordinatesButton';
+import GameInstructions from './components/GameInstructions';
+import { useZombies } from './hooks/useZombies';
 
 interface Coordinate {
     id: number;
@@ -19,6 +21,7 @@ interface Coordinate {
 
 export default function Home() {
     const [coordinates, setCoordinates] = useState<Coordinate[]>([]);
+    const { score } = useZombies();
 
     useEffect(() => {
         const fetchCoordinates = async () => {
@@ -47,9 +50,13 @@ export default function Home() {
                 Enquête avec Youssouf
             </h1>
             <CameraFeed />
+            <GameInstructions />
             <div className="absolute bottom-4 left-4 right-4 flex flex-col gap-4">
                 <UserLocation />
                 <StoreCoordinatesButton />
+            </div>
+            <div className="absolute top-4 right-4 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg">
+                <p className="font-bold">Score: {score}</p>
             </div>
         </div>
     );
