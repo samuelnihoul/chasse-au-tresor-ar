@@ -10,7 +10,13 @@ const CameraFeed: React.FC = () => {
         const startVideo = async () => {
             if (videoRef.current) {
                 try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: { ideal: 'environment' }, // Utilise la caméra arrière
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 }
+                        }
+                    });
                     videoRef.current.srcObject = stream;
                 } catch (error) {
                     console.error("Erreur d'accès à la caméra :", error);
@@ -31,13 +37,21 @@ const CameraFeed: React.FC = () => {
     }, []);
 
     return (
-        <div className='relative flex justify-center items-center '>
+        <div className='relative flex justify-center items-center'>
             <video
                 ref={videoRef}
                 autoPlay
                 playsInline
-                style={{ width: '50%', height: 'auto', marginTop: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid #ccc' }}
-            /></div>
+                style={{
+                    width: '100%',
+                    height: '100vh',
+                    objectFit: 'cover',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                }}
+            />
+        </div>
     );
 };
 
