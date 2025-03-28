@@ -11,20 +11,27 @@ const UserLocation: React.FC = () => {
     const [location, setLocation] = useState<Location>({ latitude: null, longitude: null });
     const [distanceToNorthPole, setDistanceToNorthPole] = useState<number | null>(null);
 
-    useEffect(() => {
-        const getLocation = () => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition((position) => {
-                    const { latitude, longitude } = position.coords;
-                    setLocation({ latitude, longitude });
-                    calculateDistanceToNorthPole(latitude);
-                });
-            } else {
-                alert("La géolocalisation n'est pas supportée par ce navigateur.");
-            }
-        };
+    const getLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const { latitude, longitude } = position.coords;
+                setLocation({ latitude, longitude });
+                calculateDistanceToNorthPole(latitude);
+            });
+        } else {
+            alert("La géolocalisation n'est pas supportée par ce navigateur.");
+        }
+    };
 
+    useEffect(() => {
+        // Première récupération
         getLocation();
+
+        // Mise à jour toutes les 2 secondes
+        const interval = setInterval(getLocation, 2000);
+
+        // Nettoyage à la destruction du composant
+        return () => clearInterval(interval);
     }, []);
 
     const calculateDistanceToNorthPole = (latitude: number) => {
@@ -40,13 +47,13 @@ const UserLocation: React.FC = () => {
     };
 
     return (
-        <div style={{ padding: '20px', textAlign: 'center' }}>
-            <h2>Coordonnées de l'utilisateur</h2>
+        <div className="bg-black bg-opacity-50 backdrop-blur-sm rounded-lg p-4 text-white">
+            <h2 className="text-lg font-semibold mb-2">Coordonnées de l'utilisateur</h2>
             {location.latitude !== null && location.longitude !== null ? (
                 <>
-                    <p>Latitude : {location.latitude}</p>
-                    <p>Longitude : {location.longitude}</p>
-                    <p>Distance au prochain indice {distanceToNorthPole?.toFixed(2)} km</p>
+                    <p>Latitude : {location.latitude.toFixed(6)}°</p>
+                    <p>Longitude : {location.longitude.toFixed(6)}°</p>
+                    <p className="mt-2">Distance au prochain indice : {distanceToNorthPole?.toFixed(2)} km</p>
                 </>
             ) : (
                 <p>Obtention des coordonnées...</p>
