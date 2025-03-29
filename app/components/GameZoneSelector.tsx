@@ -1,18 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-
-interface GameZone {
-    id: string;
-    name: string;
-    description: string;
-}
-
-const gameZones: GameZone[] = [
-    { id: 'zone1', name: 'Zone 1', description: 'Première zone de jeu' },
-    { id: 'zone2', name: 'Zone 2', description: 'Deuxième zone de jeu' },
-    { id: 'zone3', name: 'Zone 3', description: 'Troisième zone de jeu' },
-];
+import { gameZones, GameZone } from '../config/gameZones.config';
 
 interface GameZoneSelectorProps {
     onZoneSelect: (zoneId: string) => void;
@@ -21,6 +10,19 @@ interface GameZoneSelectorProps {
 
 const GameZoneSelector: React.FC<GameZoneSelectorProps> = ({ onZoneSelect, currentZone }) => {
     const [isOpen, setIsOpen] = useState(false);
+
+    const getDifficultyColor = (difficulty: GameZone['difficulty']) => {
+        switch (difficulty) {
+            case 'easy':
+                return 'text-green-500';
+            case 'medium':
+                return 'text-yellow-500';
+            case 'hard':
+                return 'text-red-500';
+            default:
+                return 'text-gray-500';
+        }
+    };
 
     return (
         <div className="relative">
@@ -58,6 +60,11 @@ const GameZoneSelector: React.FC<GameZoneSelectorProps> = ({ onZoneSelect, curre
                             >
                                 <div className="font-medium">{zone.name}</div>
                                 <div className="text-sm text-gray-500">{zone.description}</div>
+                                <div className={`text-xs mt-1 ${getDifficultyColor(zone.difficulty)}`}>
+                                    {zone.difficulty === 'easy' && 'Facile'}
+                                    {zone.difficulty === 'medium' && 'Moyen'}
+                                    {zone.difficulty === 'hard' && 'Difficile'}
+                                </div>
                             </button>
                         ))}
                     </div>
