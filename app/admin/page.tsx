@@ -43,35 +43,6 @@ export default function AdminPage() {
         setEditingId(coord.id);
         setEditForm(coord);
     };
-
-    const handleSave = async (id: number) => {
-        if (!editForm) return;
-
-        try {
-            const response = await fetch('/api/store-coordinates', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...editForm,
-                    id
-                }),
-            });
-
-            if (response.ok) {
-                setEditingId(null);
-                setEditForm(null);
-                // Refresh coordinates
-                const response = await fetch('/api/store-coordinates');
-                const data = await response.json();
-                setCoordinates(data);
-            }
-        } catch (error) {
-            console.error('Error updating coordinate:', error);
-        }
-    };
-
     const handleDelete = async (id: number) => {
         if (!confirm('Êtes-vous sûr de vouloir supprimer cet indice ?')) {
             return;
@@ -84,6 +55,7 @@ export default function AdminPage() {
 
             if (response.ok) {
                 setCoordinates(coordinates.filter(coord => coord.id !== id));
+                alert('Indice supprimé avec succès');
             }
         } catch (error) {
             console.error('Error deleting coordinate:', error);
