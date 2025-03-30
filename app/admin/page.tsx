@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import AdminProtection from '../components/AdminProtection';
+import UserLocation from '../components/UserLocation'
+import StoreCoordinatesButton from '../components/StoreCoordinatesButton';
+import { gameZones } from '../config/gameZones.config';
 
 interface Coordinate {
     id: number;
@@ -20,7 +23,8 @@ export default function AdminPage() {
     const [editForm, setEditForm] = useState({
         hintNumber: 0,
         hint: '',
-        gameMap: ''
+        gameMap: '',
+        zoneId: ''
     });
 
     useEffect(() => {
@@ -44,7 +48,8 @@ export default function AdminPage() {
         setEditForm({
             hintNumber: coord.hintNumber,
             hint: coord.hint,
-            gameMap: coord.gameMap
+            gameMap: coord.zoneId,
+            zoneId: coord.zoneId
         });
     };
 
@@ -57,7 +62,8 @@ export default function AdminPage() {
                 },
                 body: JSON.stringify({
                     id,
-                    ...editForm
+                    ...editForm,
+                    gameMap: editForm.zoneId
                 }),
             });
 
@@ -78,6 +84,9 @@ export default function AdminPage() {
             <div className="container mx-auto px-4 py-8">
                 <h1 className="text-2xl font-bold mb-6 text-gray-900">Administration</h1>
                 <div className="bg-white rounded-lg shadow p-6">
+                    <div className="absolute bottom-4 left-4 right-4 flex flex-col gap-4">
+                        <StoreCoordinatesButton />
+                    </div>
                     <h2 className="text-xl font-semibold mb-4 text-gray-900">Liste des coordonnées</h2>
                     <div className="space-y-4">
                         {coordinates.map((coord) => (
@@ -85,7 +94,6 @@ export default function AdminPage() {
                                 <div className="text-gray-900">
                                     <p>Latitude: {coord.latitude}</p>
                                     <p>Longitude: {coord.longitude}</p>
-                                    <p>Zone: {coord.zoneId}</p>
                                     <p>Créé le: {new Date(coord.createdAt).toLocaleString()}</p>
                                 </div>
 
@@ -112,16 +120,22 @@ export default function AdminPage() {
                                                 className="border p-2 w-full rounded text-gray-900"
                                                 placeholder="Indice"
                                             />
-                                            <input
-                                                type="text"
-                                                value={editForm.gameMap}
+                                            <select
+                                                value={editForm.zoneId}
                                                 onChange={(e) => setEditForm({
                                                     ...editForm,
+                                                    zoneId: e.target.value,
                                                     gameMap: e.target.value
                                                 })}
                                                 className="border p-2 w-full rounded text-gray-900"
-                                                placeholder="Carte du jeu"
-                                            />
+                                            >
+                                                <option value="">Sélectionner une zone</option>
+                                                {gameZones.map((zone) => (
+                                                    <option key={zone.id} value={zone.id}>
+                                                        {zone.name} ({zone.difficulty})
+                                                    </option>
+                                                ))}
+                                            </select>
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => handleSave(coord.id)}
@@ -142,7 +156,7 @@ export default function AdminPage() {
                                     <>
                                         <div className="text-gray-900">
                                             <p>Indice: {coord.hint}</p>
-                                            <p>Carte du jeu: {coord.gameMap}</p>
+                                            <p>Zone: {gameZones.find(zone => zone.id === coord.gameMap)?.name || coord.gameMap}</p>
                                             <p>Numéro de l'indice: {coord.hintNumber}</p>
                                         </div>
                                         <button
