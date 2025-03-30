@@ -46,7 +46,7 @@ const GameZoneSelector: React.FC<GameZoneSelectorProps> = ({ onZoneSelect, curre
             </button>
 
             {isOpen && (
-                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="absolute top-full left-0 mt-1 w-64 bg-white text-black rounded-lg shadow-lg border border-gray-200 z-50">
                     <div className="py-1">
                         {gameZones.map((zone) => (
                             <button
