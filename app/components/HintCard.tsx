@@ -17,10 +17,12 @@ interface HintCardProps {
     coord: Coordinate;
     onEdit: (coord: Coordinate) => void;
     onDelete: (id: number) => void;
+    onSave: (id: number) => void;
+    onCancel: () => void;
     isEditing: boolean;
 }
 
-const HintCard: React.FC<HintCardProps> = ({ coord, onEdit, onDelete, isEditing }) => {
+const HintCard: React.FC<HintCardProps> = ({ coord, onEdit, onDelete, onSave, onCancel, isEditing }) => {
     return (
         <div className="border p-4 rounded-lg shadow">
             <div className="text-gray-900">
@@ -67,6 +69,20 @@ const HintCard: React.FC<HintCardProps> = ({ coord, onEdit, onDelete, isEditing 
                             </option>
                         ))}
                     </select>
+                    <div className="flex gap-2 mt-2">
+                        <button
+                            onClick={() => onSave(coord.id)}
+                            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                        >
+                            Sauvegarder
+                        </button>
+                        <button
+                            onClick={onCancel}
+                            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                        >
+                            Annuler
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <>

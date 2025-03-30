@@ -41,7 +41,7 @@ export default function AdminPage() {
 
     const handleEdit = (coord: Coordinate) => {
         setEditingId(coord.id);
-        setEditForm(coord);
+        setEditForm({ ...coord });
     };
 
     const handleSave = async (id: number) => {
@@ -54,22 +54,33 @@ export default function AdminPage() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    ...editForm,
-                    id
+                    id,
+                    hintNumber: editForm.hintNumber,
+                    hint: editForm.hint,
+                    gameMap: editForm.gameMap
                 }),
             });
 
             if (response.ok) {
+                // Mise à jour optimiste de l'interface
+                setCoordinates(coordinates.map(coord =>
+                    coord.id === id ? { ...coord, ...editForm } : coord
+                ));
                 setEditingId(null);
                 setEditForm(null);
-                // Refresh coordinates
-                const response = await fetch('/api/store-coordinates');
-                const data = await response.json();
-                setCoordinates(data);
+            } else {
+                const error = await response.json();
+                alert(`Erreur lors de la sauvegarde: ${error.error || 'Erreur inconnue'}`);
             }
         } catch (error) {
             console.error('Error updating coordinate:', error);
+            alert('Erreur lors de la sauvegarde');
         }
+    };
+
+    const handleCancel = () => {
+        setEditingId(null);
+        setEditForm(null);
     };
 
     const handleDelete = async (id: number) => {
@@ -78,17 +89,24 @@ export default function AdminPage() {
         }
 
         try {
-            const response = await fetch(`/api/store-coordinates/${id}`, {
+            const response = await fetch('/api/store-coordinates', {
                 method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id }),
             });
 
             if (response.ok) {
                 setCoordinates(coordinates.filter(coord => coord.id !== id));
                 alert('Indice supprimé avec succès');
+            } else {
+                const error = await response.json();
+                alert(`Erreur lors de la suppression: ${error.error || 'Erreur inconnue'}`);
             }
         } catch (error) {
             console.error('Error deleting coordinate:', error);
-            alert('erreur lors de la suppression')
+            alert('Erreur lors de la suppression');
         }
     };
 
@@ -105,9 +123,11 @@ export default function AdminPage() {
                         {coordinates.map((coord) => (
                             <HintCard
                                 key={coord.id}
-                                coord={coord}
+                                coord={editingId === coord.id ? editForm! : coord}
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
+                                onSave={handleSave}
+                                onCancel={handleCancel}
                                 isEditing={editingId === coord.id}
                             />
                         ))}
