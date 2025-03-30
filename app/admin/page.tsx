@@ -87,6 +87,7 @@ export default function AdminPage() {
             }
         } catch (error) {
             console.error('Error deleting coordinate:', error);
+            alert('erreur lors de la suppression')
         }
     };
 

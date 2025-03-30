@@ -37,18 +37,13 @@ export async function GET() {
         );
     }
 }
-
-export async function PUT(req: NextRequest) {
+export async function DELETE(req: NextRequest) {
     try {
-        const { id, hintNumber, hint, gameMap } = await req.json();
+        const { id } = await req.json();
+        console.log('Received ID for deletion:', id);
 
         const result = await db
-            .update(coordinates)
-            .set({
-                hintNumber,
-                hint,
-                gameMap
-            })
+            .delete(coordinates)
             .where(eq(coordinates.id, id))
             .returning();
 
@@ -59,12 +54,42 @@ export async function PUT(req: NextRequest) {
             );
         }
 
-        return NextResponse.json(result[0]);
-    } catch (error) {
-        console.error('Error updating coordinate:', error);
+        return NextResponse.json({ message: 'Coordinate deleted successfully' });
+    }
+    catch (error) {
+        console.error('Error deleting coordinate:', error);
         return NextResponse.json(
-            { error: 'Failed to update coordinate' },
+            { error: 'Failed to delete coordinate' },
             { status: 500 }
         );
     }
-}
+    export async function PUT(req: NextRequest) {
+        try {
+            const { id, hintNumber, hint, gameMap } = await req.json();
+
+            const result = await db
+                .update(coordinates)
+                .set({
+                    hintNumber,
+                    hint,
+                    gameMap
+                })
+                .where(eq(coordinates.id, id))
+                .returning();
+
+            if (result.length === 0) {
+                return NextResponse.json(
+                    { error: 'Coordinate not found' },
+                    { status: 404 }
+                );
+            }
+
+            return NextResponse.json(result[0]);
+        } catch (error) {
+            console.error('Error updating coordinate:', error);
+            return NextResponse.json(
+                { error: 'Failed to update coordinate' },
+                { status: 500 }
+            );
+        }
+    }
