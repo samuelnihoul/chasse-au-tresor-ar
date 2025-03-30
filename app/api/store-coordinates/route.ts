@@ -3,7 +3,6 @@ import { getAllCoordinates } from '@/db/queries';
 import db from '@/db/drizzle';
 import { coordinates } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-
 export async function POST(req: NextRequest) {
     try {
         const { latitude, longitude } = await req.json();
@@ -14,7 +13,7 @@ export async function POST(req: NextRequest) {
             .values({
                 latitude,
                 longitude,
-                createdAt: new Date().toISOString()
+                createdAt: new Date()
             })
             .returning();
 
