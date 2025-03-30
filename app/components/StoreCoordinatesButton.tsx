@@ -6,19 +6,8 @@ import useAuth from '../hooks/useAuth';
 
 const StoreCoordinatesButton: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
-    const { isAuthenticated } = useAuth();
-    const [selectedZone, setSelectedZone] = useState<string>();
 
     const handleStoreCoordinates = async () => {
-        if (!isAuthenticated) {
-            alert('Veuillez vous connecter en tant qu\'administrateur');
-            return;
-        }
-
-        if (!selectedZone) {
-            alert('Veuillez sélectionner une zone de jeu');
-            return;
-        }
 
         if (!navigator.geolocation) {
             alert('Geolocation is not supported by this browser.');
@@ -42,7 +31,6 @@ const StoreCoordinatesButton: React.FC = () => {
                 body: JSON.stringify({
                     latitude,
                     longitude,
-                    zoneId: selectedZone
                 }),
             });
 
@@ -65,7 +53,7 @@ const StoreCoordinatesButton: React.FC = () => {
         <div className="flex flex-col items-center gap-4">
             <button
                 onClick={handleStoreCoordinates}
-                disabled={isLoading || !selectedZone || !isAuthenticated}
+                disabled={isLoading}
                 className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
             >
                 {isLoading ? 'Storing...' : 'Enregistrer les coordonnées'}
