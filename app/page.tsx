@@ -53,7 +53,6 @@ export default function Home() {
             <GameInstructions />
             <div className="absolute bottom-4 left-4 right-4 flex flex-col gap-4">
                 <UserLocation />
-                <StoreCoordinatesButton />
             </div>
         </div>
     );

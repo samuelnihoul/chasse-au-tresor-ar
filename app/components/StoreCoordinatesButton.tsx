@@ -63,10 +63,6 @@ const StoreCoordinatesButton: React.FC = () => {
 
     return (
         <div className="flex flex-col items-center gap-4">
-            <GameZoneSelector
-                onZoneSelect={setSelectedZone}
-                currentZone={selectedZone}
-            />
             <button
                 onClick={handleStoreCoordinates}
                 disabled={isLoading || !selectedZone || !isAuthenticated}
