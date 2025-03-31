@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useHints, calculateDistance } from '../hooks/useHints';
+import { useHints, calculateDistance, useUserPosition } from '../hooks/useHints';
 
 interface Location {
     latitude: number | null;
@@ -24,6 +24,9 @@ const UserLocation: React.FC = () => {
         distanceToNextHint,
         setDistanceToNextHint
     } = useHints();
+
+    // Utiliser le hook useUserPosition pour mettre à jour la distance
+    useUserPosition();
 
     // Seuil de proximité pour considérer qu'un utilisateur a atteint un indice (en mètres)
     const PROXIMITY_THRESHOLD = 20;

@@ -34,39 +34,39 @@ export const useHints = create<HintState>((set, get) => ({
     loading: false,
     error: null,
     distanceToNextHint: null,
-    
+
     setHints: (hints: Coordinate[]) => {
         // Trier les indices par numéro d'indice
         const sortedHints = [...hints].sort((a, b) => a.hintNumber - b.hintNumber);
         set({ hints: sortedHints });
     },
-    
+
     setCurrentHintIndex: (index: number) => {
         set({ currentHintIndex: index });
     },
-    
+
     setDistanceToNextHint: (distance: number | null) => {
         set({ distanceToNextHint: distance });
     },
-    
+
     nextHint: () => {
         const { currentHintIndex, hints } = get();
         if (currentHintIndex < hints.length - 1) {
             set({ currentHintIndex: currentHintIndex + 1 });
         }
     },
-    
+
     getCurrentHint: () => {
         const { hints, currentHintIndex } = get();
-        return hints.length > 0 && currentHintIndex < hints.length 
-            ? hints[currentHintIndex] 
+        return hints.length > 0 && currentHintIndex < hints.length
+            ? hints[currentHintIndex]
             : null;
     },
-    
+
     getNextHint: () => {
         const { hints, currentHintIndex } = get();
-        return hints.length > 0 && currentHintIndex < hints.length - 1 
-            ? hints[currentHintIndex + 1] 
+        return hints.length > 0 && currentHintIndex < hints.length - 1
+            ? hints[currentHintIndex + 1]
             : null;
     }
 }));
@@ -82,4 +82,46 @@ export const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c * 1000; // Distance en mètres
+};
+
+// Hook personnalisé pour gérer la position de l'utilisateur et la distance
+export const useUserPosition = () => {
+    const { setDistanceToNextHint, getNextHint } = useHints();
+
+    useEffect(() => {
+        const updateDistance = () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const nextHint = getNextHint();
+                        if (nextHint) {
+                            const distance = calculateDistance(
+                                position.coords.latitude,
+                                position.coords.longitude,
+                                nextHint.latitude,
+                                nextHint.longitude
+                            );
+                            setDistanceToNextHint(distance);
+                        }
+                    },
+                    (error) => {
+                        console.error('Error getting location:', error);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    }
+                );
+            }
+        };
+
+        // Mise à jour initiale
+        updateDistance();
+
+        // Mise à jour toutes les 2 secondes
+        const interval = setInterval(updateDistance, 2000);
+
+        return () => clearInterval(interval);
+    }, [setDistanceToNextHint, getNextHint]);
 };

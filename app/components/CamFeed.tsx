@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useZombies } from '../hooks/useZombies';
-import { useHints } from '../hooks/useHints';
 
 interface Zombie {
     id: string;
@@ -20,9 +19,8 @@ const CameraFeed: React.FC = () => {
     const [shooting, setShooting] = useState(false);
     const animationFrameRef = useRef<number | null>(null);
 
-    // Utiliser les hooks pour les zombies et les indices
+    // Utiliser le hook pour les zombies
     const { zombies, addZombie, damageZombie, removeZombie, score } = useZombies();
-    const { distanceToNextHint } = useHints();
 
     // Initialiser le canvas
     useEffect(() => {
@@ -117,9 +115,7 @@ const CameraFeed: React.FC = () => {
 
     // Ajouter des zombies périodiquement
     useEffect(() => {
-        if (!distanceToNextHint) return;
-
-        const zombieFrequency = Math.max(5000, 15000 - (15000 * (1 - distanceToNextHint / 1000)));
+        const ZOMBIE_SPAWN_INTERVAL = 8000; // 8 secondes
 
         const zombieInterval = setInterval(() => {
             // Créer un zombie à une position aléatoire autour de l'écran
@@ -129,12 +125,12 @@ const CameraFeed: React.FC = () => {
             const y = Math.sin(angle) * distance;
 
             addZombie(x, y);
-        }, zombieFrequency);
+        }, ZOMBIE_SPAWN_INTERVAL);
 
         return () => {
             clearInterval(zombieInterval);
         };
-    }, [addZombie, distanceToNextHint]);
+    }, [addZombie]);
 
     // Gérer le tir sur les zombies
     const handleShoot = (e: React.MouseEvent<HTMLDivElement>) => {
