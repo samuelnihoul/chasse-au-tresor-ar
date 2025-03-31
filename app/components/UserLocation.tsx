@@ -8,16 +8,10 @@ interface Location {
     longitude: number | null;
 }
 
-interface Position {
-    latitude: number;
-    longitude: number;
-    timestamp: number;
-}
-
 const UserLocation: React.FC = () => {
     const [location, setLocation] = useState<Location>({ latitude: null, longitude: null });
-    const [totalDistance, setTotalDistance] = useState<number>(0);
-    const [previousPositions, setPreviousPositions] = useState<Position[]>([]);
+    const [startPosition, setStartPosition] = useState<Location | null>(null);
+    const [distanceFromStart, setDistanceFromStart] = useState<number>(0);
     const [isNearHint, setIsNearHint] = useState<boolean>(false);
 
     // Utiliser le hook useHints pour gérer les indices
@@ -38,10 +32,25 @@ const UserLocation: React.FC = () => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition((position) => {
                 const { latitude, longitude } = position.coords;
-                const currentTime = Date.now();
 
                 // Mettre à jour la position actuelle
                 setLocation({ latitude, longitude });
+
+                // Si c'est la première position, la sauvegarder comme point de départ
+                if (!startPosition) {
+                    setStartPosition({ latitude, longitude });
+                }
+
+                // Calculer la distance depuis le point de départ
+                if (startPosition && startPosition.latitude && startPosition.longitude) {
+                    const distance = calculateDistance(
+                        startPosition.latitude,
+                        startPosition.longitude,
+                        latitude,
+                        longitude
+                    );
+                    setDistanceFromStart(distance);
+                }
 
                 // Calculer la distance jusqu'au prochain indice
                 const nextHintConst = getNextHint();
@@ -65,25 +74,12 @@ const UserLocation: React.FC = () => {
                         setIsNearHint(false);
                     }
                 }
-
-                // Calculer la distance depuis la dernière position
-                if (previousPositions.length > 0) {
-                    const lastPosition = previousPositions[previousPositions.length - 1];
-                    const distance = calculateDistance(
-                        lastPosition.latitude,
-                        lastPosition.longitude,
-                        latitude,
-                        longitude
-                    );
-                    setTotalDistance(prev => prev + distance / 1000); // Convertir en km pour l'affichage
-                }
-
-                // Mettre à jour l'historique des positions
-                setPreviousPositions(prev => {
-                    const newPositions = [...prev, { latitude, longitude, timestamp: currentTime }];
-                    // Garder seulement les 100 dernières positions pour éviter une utilisation excessive de la mémoire
-                    return newPositions.slice(-100);
-                });
+            }, (error) => {
+                console.error('Error getting location:', error);
+            }, {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
             });
         } else {
             alert("La géolocalisation n'est pas supportée par ce navigateur.");
@@ -113,6 +109,7 @@ const UserLocation: React.FC = () => {
         return () => clearInterval(interval);
     }, [setHints]);
 
+    // Effet pour la géolocalisation
     useEffect(() => {
         // Première récupération
         getLocation();
@@ -122,7 +119,7 @@ const UserLocation: React.FC = () => {
 
         // Nettoyage à la destruction du composant
         return () => clearInterval(interval);
-    }, []);
+    }, [startPosition]); // Ajouter startPosition comme dépendance
 
     // Obtenir l'indice actuel
     const currentHint = getCurrentHint();
@@ -135,6 +132,16 @@ const UserLocation: React.FC = () => {
                 <>
                     <p>Latitude : {location.latitude.toFixed(6)}°</p>
                     <p>Longitude : {location.longitude.toFixed(6)}°</p>
+
+                    {startPosition && (
+                        <div className="mt-2">
+                            <p className="font-semibold">Distance depuis le départ :</p>
+                            <p>{(distanceFromStart < 1000)
+                                ? `${distanceFromStart.toFixed(0)} m`
+                                : `${(distanceFromStart / 1000).toFixed(2)} km`}
+                            </p>
+                        </div>
+                    )}
 
                     {currentHint && (
                         <div className="mt-2 p-2 bg-purple-900 bg-opacity-50 rounded">
@@ -158,8 +165,6 @@ const UserLocation: React.FC = () => {
                             )}
                         </div>
                     )}
-
-                    <p className="mt-2">Distance totale parcourue : {totalDistance.toFixed(2)} km</p>
                 </>
             ) : (
                 <p>Obtention des coordonnées...</p>
