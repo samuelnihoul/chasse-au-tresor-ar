@@ -13,6 +13,10 @@ const UserLocation: React.FC = () => {
     const [startPosition, setStartPosition] = useState<Location | null>(null);
     const [distanceFromStart, setDistanceFromStart] = useState<number>(0);
     const [isNearHint, setIsNearHint] = useState<boolean>(false);
+    const [caloriesBurned, setCaloriesBurned] = useState<number>(0);
+
+    // Constante pour le calcul des calories (60 calories par km de marche)
+    const CALORIES_PER_KM = 60;
 
     // Utiliser le hook useHints pour gérer les indices
     const {
@@ -53,6 +57,8 @@ const UserLocation: React.FC = () => {
                         longitude
                     );
                     setDistanceFromStart(distance);
+                    // Calculer les calories brûlées
+                    setCaloriesBurned(Math.round((distance / 1000) * CALORIES_PER_KM));
                 }
 
                 // Calculer la distance jusqu'au prochain indice
@@ -142,6 +148,9 @@ const UserLocation: React.FC = () => {
                             <p>{(distanceFromStart < 1000)
                                 ? `${distanceFromStart.toFixed(0)} m`
                                 : `${(distanceFromStart / 1000).toFixed(2)} km`}
+                            </p>
+                            <p className="text-green-400">
+                                Calories brûlées : {caloriesBurned} kcal
                             </p>
                         </div>
                     )}
