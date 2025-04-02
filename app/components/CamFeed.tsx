@@ -18,9 +18,10 @@ const CameraFeed: React.FC = () => {
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
     const [shooting, setShooting] = useState(false);
     const animationFrameRef = useRef<number | null>(null);
+    const lastUpdateRef = useRef<number>(0);
 
     // Utiliser le hook pour les zombies
-    const { zombies, addZombie, damageZombie, removeZombie, score } = useZombies();
+    const { zombies, addZombie, damageZombie, removeZombie, score, updateZombiePositions } = useZombies();
 
     // Initialiser le canvas
     useEffect(() => {
@@ -40,8 +41,14 @@ const CameraFeed: React.FC = () => {
         window.addEventListener('resize', resizeCanvas);
 
         // Fonction d'animation
-        const animate = () => {
+        const animate = (timestamp: number) => {
             animationFrameRef.current = requestAnimationFrame(animate);
+
+            // Mettre à jour les positions des zombies toutes les 50ms (20 fois par seconde)
+            if (timestamp - lastUpdateRef.current > 50) {
+                updateZombiePositions();
+                lastUpdateRef.current = timestamp;
+            }
 
             // Effacer le canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -73,7 +80,7 @@ const CameraFeed: React.FC = () => {
             });
         };
 
-        animate();
+        animate(0);
 
         return () => {
             if (animationFrameRef.current !== null) {
@@ -81,7 +88,7 @@ const CameraFeed: React.FC = () => {
             }
             window.removeEventListener('resize', resizeCanvas);
         };
-    }, [zombies]);
+    }, [zombies, updateZombiePositions]);
 
     // Démarrer la caméra
     useEffect(() => {
