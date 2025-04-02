@@ -135,7 +135,7 @@ const UserLocation: React.FC = () => {
     const nextHintObj = getNextHint();
 
     return (
-        <div className="bg-black bg-opacity-50 backdrop-blur-sm rounded-lg p-4 text-white">
+        <div className=" bg-opacity-0  rounded-lg p-4 text-white">
             <h2 className="text-lg font-semibold mb-2">Coordonnées de l'utilisateur</h2>
             {location.latitude !== null && location.longitude !== null ? (
                 <>
