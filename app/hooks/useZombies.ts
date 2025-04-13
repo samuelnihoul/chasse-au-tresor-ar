@@ -23,6 +23,8 @@ interface ZombieState {
   updateZombiePositions: () => void;
 }
 
+const MAX_ZOMBIES = 10;
+
 export const useZombies = create<ZombieState>((set) => ({
   zombies: [],
   score: 0,
@@ -37,9 +39,26 @@ export const useZombies = create<ZombieState>((set) => ({
       active: true
     };
 
-    set((state) => ({
-      zombies: [...state.zombies, newZombie]
-    }));
+    set((state) => {
+      let updatedZombies = [...state.zombies, newZombie];
+
+      // Si on dépasse la limite, supprimer les zombies les plus anciens
+      if (updatedZombies.length > MAX_ZOMBIES) {
+        // Trier les zombies par ID (qui contient le timestamp) pour trouver les plus anciens
+        updatedZombies.sort((a, b) => {
+          const timeA = parseInt(a.id.split('-')[1]);
+          const timeB = parseInt(b.id.split('-')[1]);
+          return timeA - timeB;
+        });
+
+        // Garder seulement les MAX_ZOMBIES zombies les plus récents
+        updatedZombies = updatedZombies.slice(-MAX_ZOMBIES);
+      }
+
+      return {
+        zombies: updatedZombies
+      };
+    });
   },
 
   removeZombie: (id: string) => {
