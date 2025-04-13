@@ -21,6 +21,7 @@ interface Coordinate {
 
 export default function Home() {
     const [coordinates, setCoordinates] = useState<Coordinate[]>([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const { score } = useZombies();
 
     useEffect(() => {
@@ -51,9 +52,35 @@ export default function Home() {
             </h1>
             <CameraFeed />
             <GameInstructions />
-            <div className="absolute bottom-4 left-4 right-4 flex flex-col gap-4">
-                <UserLocation />
-            </div>
+
+            {/* Bouton d'information */}
+            <button
+                onClick={() => setIsModalOpen(true)}
+                className="fixed bottom-4 right-4 bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full shadow-lg transition-all duration-300"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </button>
+
+            {/* Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4 relative">
+                        <button
+                            onClick={() => setIsModalOpen(false)}
+                            className="absolute top-2 right-2 text-gray-400 hover:text-white"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                        <div className="mt-4">
+                            <UserLocation />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
