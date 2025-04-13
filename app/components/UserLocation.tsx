@@ -16,6 +16,7 @@ const UserLocation: React.FC = () => {
     const [caloriesBurned, setCaloriesBurned] = useState<number>(0);
     const [showHintModal, setShowHintModal] = useState<boolean>(false);
     const [lastHintNumber, setLastHintNumber] = useState<number>(-1);
+    const [arrowRotation, setArrowRotation] = useState<number>(0);
 
     // Constante pour le calcul des calories (60 calories par km de marche)
     const CALORIES_PER_KM = 60;
@@ -36,6 +37,24 @@ const UserLocation: React.FC = () => {
 
     // Seuil de proximité pour considérer qu'un utilisateur a atteint un indice (en mètres)
     const PROXIMITY_THRESHOLD = 20;
+
+    // Fonction pour calculer l'angle entre deux points
+    const calculateBearing = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+        const toRad = (deg: number) => deg * (Math.PI / 180);
+        const toDeg = (rad: number) => rad * (180 / Math.PI);
+
+        const φ1 = toRad(lat1);
+        const φ2 = toRad(lat2);
+        const λ1 = toRad(lon1);
+        const λ2 = toRad(lon2);
+
+        const y = Math.sin(λ2 - λ1) * Math.cos(φ2);
+        const x = Math.cos(φ1) * Math.sin(φ2) -
+            Math.sin(φ1) * Math.cos(φ2) * Math.cos(λ2 - λ1);
+        let θ = Math.atan2(y, x);
+        θ = toDeg(θ);
+        return (θ + 360) % 360;
+    };
 
     const getLocation = () => {
         if (navigator.geolocation) {
@@ -73,6 +92,15 @@ const UserLocation: React.FC = () => {
                         nextHintConst.longitude
                     );
                     setDistanceToNextHint(distance);
+
+                    // Calculer l'angle pour la flèche
+                    const bearing = calculateBearing(
+                        latitude,
+                        longitude,
+                        nextHintConst.latitude,
+                        nextHintConst.longitude
+                    );
+                    setArrowRotation(bearing);
 
                     // Vérifier si l'utilisateur est proche de l'indice suivant
                     if (distance < PROXIMITY_THRESHOLD) {
@@ -186,7 +214,30 @@ const UserLocation: React.FC = () => {
                 </div>
             )}
 
-            <h2 className="text-lg font-semibold mb-2">Coordonnées de l'utilisateur</h2>
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">Coordonnées de l'utilisateur</h2>
+                {nextHintObj && (
+                    <div className="relative w-8 h-8">
+                        <div
+                            className="absolute inset-0 transition-transform duration-300"
+                            style={{ transform: `rotate(${arrowRotation}deg)` }}
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="w-full h-full text-white"
+                            >
+                                <path d="M12 2v20M12 2l8 8M12 2L4 10" />
+                            </svg>
+                        </div>
+                    </div>
+                )}
+            </div>
             {location.latitude !== null && location.longitude !== null ? (
                 <>
                     <p>Latitude : {location.latitude.toFixed(6)}°</p>
