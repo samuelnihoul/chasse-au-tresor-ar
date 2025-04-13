@@ -6,6 +6,7 @@ import { useHints, calculateDistance, useUserPosition } from '../hooks/useHints'
 interface Location {
     latitude: number | null;
     longitude: number | null;
+    timestamp?: number;
 }
 
 const UserLocation: React.FC = () => {
@@ -17,6 +18,8 @@ const UserLocation: React.FC = () => {
     const [showHintModal, setShowHintModal] = useState<boolean>(false);
     const [lastHintNumber, setLastHintNumber] = useState<number>(-1);
     const [arrowRotation, setArrowRotation] = useState<number>(0);
+    const [speed, setSpeed] = useState<number>(0);
+    const [lastLocation, setLastLocation] = useState<Location | null>(null);
 
     // Constante pour le calcul des calories (60 calories par km de marche)
     const CALORIES_PER_KM = 60;
@@ -37,6 +40,9 @@ const UserLocation: React.FC = () => {
 
     // Seuil de proximité pour considérer qu'un utilisateur a atteint un indice (en mètres)
     const PROXIMITY_THRESHOLD = 20;
+
+    // Seuil de vitesse minimum (7 km/h)
+    const MIN_SPEED_THRESHOLD = 7;
 
     // Fonction pour calculer l'angle entre deux points
     const calculateBearing = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -60,13 +66,31 @@ const UserLocation: React.FC = () => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition((position) => {
                 const { latitude, longitude } = position.coords;
+                const currentTime = Date.now();
 
-                // Mettre à jour la position actuelle
-                setLocation({ latitude, longitude });
+                // Calcul de la vitesse si on a une position précédente
+                if (lastLocation && lastLocation.latitude && lastLocation.longitude) {
+                    const distance = calculateDistance(
+                        lastLocation.latitude,
+                        lastLocation.longitude,
+                        latitude,
+                        longitude
+                    );
+                    const timeDiff = (currentTime - (lastLocation.timestamp || currentTime)) / 1000; // en secondes
+                    if (timeDiff > 0) {
+                        const speedKmh = (distance / timeDiff) * 3.6; // conversion m/s en km/h
+                        setSpeed(speedKmh);
+                    }
+                }
+
+                // Mettre à jour la position actuelle avec le timestamp
+                const newLocation = { latitude, longitude, timestamp: currentTime };
+                setLocation(newLocation);
+                setLastLocation(newLocation);
 
                 // Si c'est la première position, la sauvegarder comme point de départ
                 if (!startPosition) {
-                    setStartPosition({ latitude, longitude });
+                    setStartPosition(newLocation);
                 }
 
                 // Calculer la distance depuis le point de départ
@@ -242,6 +266,14 @@ const UserLocation: React.FC = () => {
                 <>
                     <p>Latitude : {location.latitude.toFixed(6)}°</p>
                     <p>Longitude : {location.longitude.toFixed(6)}°</p>
+                    <p className="mt-2">
+                        Vitesse : {speed.toFixed(1)} km/h
+                        {speed > 0 && speed < MIN_SPEED_THRESHOLD && (
+                            <span className="text-yellow-400 ml-2">
+                                ⚠️ Vous marchez trop lentement!
+                            </span>
+                        )}
+                    </p>
 
                     {startPosition && (
                         <div className="mt-2">
