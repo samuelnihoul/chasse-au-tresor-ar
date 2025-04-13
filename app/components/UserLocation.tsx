@@ -147,20 +147,41 @@ const UserLocation: React.FC = () => {
             {showHintModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-purple-900 p-6 rounded-lg max-w-md w-full mx-4">
-                        <h3 className="text-xl font-bold mb-4">Nouvel indice atteint!</h3>
                         {currentHint && (
                             <>
-                                <p className="mb-2">Indice #{currentHint.hintNumber}:</p>
-                                <p className="mb-4">{currentHint.hint}</p>
-                                <p className="text-sm mb-4">Carte: {currentHint.gameMap}</p>
+                                {currentHint.hintNumber === 1 && (
+                                    <h3 className="text-xl font-bold mb-4 text-center text-yellow-400">
+                                        Bienvenue dans la chasse au trésor!
+                                    </h3>
+                                )}
+                                {currentHint.hint === "FIN" ? (
+                                    <>
+                                        <h3 className="text-xl font-bold mb-4 text-center text-green-400">
+                                            Félicitations! 🎉
+                                        </h3>
+                                        <p className="text-center mb-4">
+                                            Vous avez terminé la chasse au trésor!
+                                        </p>
+                                        <p className="text-center mb-4">
+                                            Calories brûlées: {caloriesBurned} kcal
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h3 className="text-xl font-bold mb-4">Nouvel indice atteint!</h3>
+                                        <p className="mb-2">Indice #{currentHint.hintNumber}:</p>
+                                        <p className="mb-4">{currentHint.hint}</p>
+                                        <p className="text-sm mb-4">Carte: {currentHint.gameMap}</p>
+                                    </>
+                                )}
+                                <button
+                                    onClick={() => setShowHintModal(false)}
+                                    className="bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded w-full"
+                                >
+                                    Fermer
+                                </button>
                             </>
                         )}
-                        <button
-                            onClick={() => setShowHintModal(false)}
-                            className="bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded w-full"
-                        >
-                            Fermer
-                        </button>
                     </div>
                 </div>
             )}
