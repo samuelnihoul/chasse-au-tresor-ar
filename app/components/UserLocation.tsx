@@ -14,6 +14,8 @@ const UserLocation: React.FC = () => {
     const [distanceFromStart, setDistanceFromStart] = useState<number>(0);
     const [isNearHint, setIsNearHint] = useState<boolean>(false);
     const [caloriesBurned, setCaloriesBurned] = useState<number>(0);
+    const [showHintModal, setShowHintModal] = useState<boolean>(false);
+    const [lastHintNumber, setLastHintNumber] = useState<number>(-1);
 
     // Constante pour le calcul des calories (60 calories par km de marche)
     const CALORIES_PER_KM = 60;
@@ -77,6 +79,11 @@ const UserLocation: React.FC = () => {
                         setIsNearHint(true);
                         // Si c'est la première fois qu'on détecte la proximité, passer à l'indice suivant
                         if (!isNearHint) {
+                            const currentHint = getCurrentHint();
+                            if (currentHint && currentHint.hintNumber !== lastHintNumber) {
+                                setShowHintModal(true);
+                                setLastHintNumber(currentHint.hintNumber);
+                            }
                             nextHint();
                         }
                     } else {
@@ -135,7 +142,29 @@ const UserLocation: React.FC = () => {
     const nextHintObj = getNextHint();
 
     return (
-        <div className=" bg-opacity-0  rounded-lg p-4 text-white">
+        <div className="bg-opacity-0 rounded-lg p-4 text-white">
+            {/* Modal pour le nouvel indice */}
+            {showHintModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-purple-900 p-6 rounded-lg max-w-md w-full mx-4">
+                        <h3 className="text-xl font-bold mb-4">Nouvel indice atteint!</h3>
+                        {currentHint && (
+                            <>
+                                <p className="mb-2">Indice #{currentHint.hintNumber}:</p>
+                                <p className="mb-4">{currentHint.hint}</p>
+                                <p className="text-sm mb-4">Carte: {currentHint.gameMap}</p>
+                            </>
+                        )}
+                        <button
+                            onClick={() => setShowHintModal(false)}
+                            className="bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded w-full"
+                        >
+                            Fermer
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <h2 className="text-lg font-semibold mb-2">Coordonnées de l'utilisateur</h2>
             {location.latitude !== null && location.longitude !== null ? (
                 <>
