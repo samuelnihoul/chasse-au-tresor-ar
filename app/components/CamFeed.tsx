@@ -19,6 +19,14 @@ const CameraFeed: React.FC = () => {
     const [shooting, setShooting] = useState(false);
     const animationFrameRef = useRef<number | null>(null);
     const lastUpdateRef = useRef<number>(0);
+    const zombieImageRef = useRef<HTMLImageElement | null>(null);
+
+    // Précharger l'image du zombie
+    useEffect(() => {
+        const image = new Image();
+        image.src = '/zom.png';
+        zombieImageRef.current = image;
+    }, []);
 
     // Utiliser le hook pour les zombies
     const { zombies, addZombie, damageZombie, removeZombie, score, updateZombiePositions } = useZombies();
@@ -62,10 +70,11 @@ const CameraFeed: React.FC = () => {
                 const screenY = (-zombie.y + 1) * (canvas.height / 2);
 
                 // Dessiner le zombie
-                ctx.fillStyle = '#00ff00';
-                ctx.beginPath();
-                ctx.arc(screenX, screenY, 20, 0, Math.PI * 2);
-                ctx.fill();
+                const zombieImage = zombieImageRef.current;
+                if (zombieImage) {
+                    const zombieSize = 40; // Taille de l'image du zombie
+                    ctx.drawImage(zombieImage, screenX - zombieSize / 2, screenY - zombieSize / 2, zombieSize, zombieSize);
+                }
 
                 // Barre de vie
                 const healthBarWidth = 40;
