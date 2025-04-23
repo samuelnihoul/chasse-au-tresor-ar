@@ -166,7 +166,12 @@ const UserLocation: React.FC = () => {
                     hint.hint !== "pas encore défini" &&
                     hint.gameMap !== "pas encore défini"
                 );
+
+                // Définir les indices sans activer automatiquement le premier
                 setHints(validHints);
+
+                // Note: Aucune logique spéciale pour activer le premier indice
+                // L'utilisateur devra se déplacer vers le premier indice comme les autres
             } catch (error) {
                 console.error('Error fetching hints:', error);
             }
@@ -201,7 +206,7 @@ const UserLocation: React.FC = () => {
                     <div className="bg-purple-900 p-6 rounded-lg max-w-md w-full mx-4">
                         {currentHint && (
                             <>
-                                {currentHint.hintNumber === 1 && (
+                                {currentHint.hintNumber === 0 && (
                                     <h3 className="text-xl font-bold mb-4 text-center text-yellow-400">
                                         Bienvenue dans la chasse au trésor!
                                     </h3>
