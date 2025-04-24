@@ -6,9 +6,14 @@ interface Zombie {
   id: string;
   x: number;
   y: number;
+  // Coordonnées GPS pour fixer le zombie dans l'environnement
+  latitude: number;
+  longitude: number;
   health: number;
   speed: number;
   active: boolean;
+  // Indique si le zombie est fixe dans l'environnement
+  fixed: boolean;
 }
 
 interface ZombieState {
@@ -30,13 +35,20 @@ export const useZombies = create<ZombieState>((set) => ({
   score: 0,
 
   addZombie: (x: number, y: number) => {
+    // Obtenir les coordonnées GPS actuelles (simulation pour cet exemple)
+    const currentLatitude = Math.random() * 0.001 + 48.8566; // Simule une position autour de Paris
+    const currentLongitude = Math.random() * 0.001 + 2.3522;
+
     const newZombie: Zombie = {
       id: `zombie-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       x,
       y,
+      latitude: currentLatitude,
+      longitude: currentLongitude,
       health: 100,
       speed: 0.5 + Math.random() * 1.5, // Vitesse aléatoire entre 0.5 et 2
-      active: true
+      active: true,
+      fixed: true // Par défaut, les nouveaux zombies sont fixés dans l'environnement
     };
 
     set((state) => {
@@ -121,7 +133,10 @@ export const useZombies = create<ZombieState>((set) => ({
       zombies: state.zombies.map(zombie => {
         if (!zombie.active) return zombie;
 
-        // Générer des déplacements aléatoires pour le mouvement brownien
+        // Ne pas mettre à jour la position des zombies fixes dans l'environnement
+        if (zombie.fixed) return zombie;
+
+        // Pour les zombies non fixes, continuer avec le mouvement brownien
         const dx = (Math.random() - 0.5) * 0.02 * zombie.speed; // Déplacement horizontal
         const dy = (Math.random() - 0.5) * 0.02 * zombie.speed; // Déplacement vertical
 

@@ -7,9 +7,17 @@ interface Zombie {
     id: string;
     x: number;
     y: number;
+    latitude: number;
+    longitude: number;
     speed: number;
     active: boolean;
     health: number;
+    fixed: boolean;
+}
+
+interface GeoPosition {
+    latitude: number;
+    longitude: number;
 }
 
 const CameraFeed: React.FC = () => {
@@ -20,6 +28,8 @@ const CameraFeed: React.FC = () => {
     const animationFrameRef = useRef<number | null>(null);
     const lastUpdateRef = useRef<number>(0);
     const zombieImageRef = useRef<HTMLImageElement | null>(null);
+    const [currentPosition, setCurrentPosition] = useState<GeoPosition | null>(null);
+    const [deviceOrientation, setDeviceOrientation] = useState({ alpha: 0, beta: 0, gamma: 0 });
 
     // Précharger l'image du zombie
     useEffect(() => {
@@ -30,6 +40,52 @@ const CameraFeed: React.FC = () => {
 
     // Utiliser le hook pour les zombies
     const { zombies, addZombie, damageZombie, removeZombie, score, updateZombiePositions } = useZombies();
+
+    // Obtenir la position GPS
+    useEffect(() => {
+        if (!navigator.geolocation) {
+            console.error("La géolocalisation n'est pas prise en charge par ce navigateur.");
+            return;
+        }
+
+        const watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                setCurrentPosition({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                });
+            },
+            (error) => {
+                console.error("Erreur de géolocalisation :", error);
+            },
+            {
+                enableHighAccuracy: true,
+                maximumAge: 0,
+                timeout: 5000
+            }
+        );
+
+        return () => {
+            navigator.geolocation.clearWatch(watchId);
+        };
+    }, []);
+
+    // Obtenir l'orientation de l'appareil
+    useEffect(() => {
+        const handleOrientation = (event: DeviceOrientationEvent) => {
+            setDeviceOrientation({
+                alpha: event.alpha || 0,
+                beta: event.beta || 0,
+                gamma: event.gamma || 0
+            });
+        };
+
+        window.addEventListener('deviceorientation', handleOrientation);
+
+        return () => {
+            window.removeEventListener('deviceorientation', handleOrientation);
+        };
+    }, []);
 
     // Initialiser le canvas
     useEffect(() => {
@@ -65,27 +121,80 @@ const CameraFeed: React.FC = () => {
             zombies.forEach((zombie: Zombie) => {
                 if (!zombie.active) return;
 
-                // Calculer la position du zombie sur l'écran
-                const screenX = (zombie.x + 1) * (canvas.width / 2);
-                const screenY = (-zombie.y + 1) * (canvas.height / 2);
+                // Pour les zombies fixes, calculer leur position à l'écran en fonction de la position GPS et de l'orientation
+                if (zombie.fixed && currentPosition) {
+                    // Calculer la distance et l'angle entre l'utilisateur et le zombie
+                    const distance = calculateDistance(
+                        currentPosition.latitude, currentPosition.longitude,
+                        zombie.latitude, zombie.longitude
+                    );
 
-                // Dessiner le zombie
-                const zombieImage = zombieImageRef.current;
-                if (zombieImage) {
-                    const zombieSize = 40; // Taille de l'image du zombie
-                    ctx.drawImage(zombieImage, screenX - zombieSize / 2, screenY - zombieSize / 2, zombieSize, zombieSize);
+                    // Calculer l'angle par rapport au nord géographique
+                    const bearing = calculateBearing(
+                        currentPosition.latitude, currentPosition.longitude,
+                        zombie.latitude, zombie.longitude
+                    );
+
+                    // Ajuster l'angle en fonction de l'orientation de l'appareil (alpha est la rotation autour de l'axe z)
+                    const adjustedBearing = (bearing - deviceOrientation.alpha + 360) % 360;
+
+                    // Convertir en radians
+                    const bearingRad = (adjustedBearing * Math.PI) / 180;
+
+                    // Facteur d'échelle pour la distance (ajuster selon vos besoins)
+                    const scaleFactor = 1000;
+
+                    // Calculer les coordonnées x et y à l'écran
+                    // x positif vers la droite, y positif vers le bas
+                    const screenX = canvas.width / 2 + Math.sin(bearingRad) * distance * scaleFactor;
+                    const screenY = canvas.height / 2 - Math.cos(bearingRad) * distance * scaleFactor;
+
+                    // Facteur de distance pour déterminer si le zombie est visible
+                    const maxDistance = 0.1; // en kilomètres
+
+                    // Ne dessiner le zombie que s'il est assez proche
+                    if (distance < maxDistance) {
+                        // Dessiner le zombie
+                        const zombieImage = zombieImageRef.current;
+                        if (zombieImage) {
+                            const zombieSize = 40; // Taille de l'image du zombie
+                            ctx.drawImage(zombieImage, screenX - zombieSize / 2, screenY - zombieSize / 2, zombieSize, zombieSize);
+                        }
+
+                        // Barre de vie
+                        const healthBarWidth = 40;
+                        const healthBarHeight = 4;
+                        const healthPercentage = zombie.health / 100;
+
+                        ctx.fillStyle = '#ff0000';
+                        ctx.fillRect(screenX - healthBarWidth / 2, screenY - 30, healthBarWidth, healthBarHeight);
+
+                        ctx.fillStyle = '#00ff00';
+                        ctx.fillRect(screenX - healthBarWidth / 2, screenY - 30, healthBarWidth * healthPercentage, healthBarHeight);
+                    }
+                } else {
+                    // Pour les zombies non fixes, utiliser l'ancienne méthode
+                    const screenX = (zombie.x + 1) * (canvas.width / 2);
+                    const screenY = (-zombie.y + 1) * (canvas.height / 2);
+
+                    // Dessiner le zombie
+                    const zombieImage = zombieImageRef.current;
+                    if (zombieImage) {
+                        const zombieSize = 40; // Taille de l'image du zombie
+                        ctx.drawImage(zombieImage, screenX - zombieSize / 2, screenY - zombieSize / 2, zombieSize, zombieSize);
+                    }
+
+                    // Barre de vie
+                    const healthBarWidth = 40;
+                    const healthBarHeight = 4;
+                    const healthPercentage = zombie.health / 100;
+
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(screenX - healthBarWidth / 2, screenY - 30, healthBarWidth, healthBarHeight);
+
+                    ctx.fillStyle = '#00ff00';
+                    ctx.fillRect(screenX - healthBarWidth / 2, screenY - 30, healthBarWidth * healthPercentage, healthBarHeight);
                 }
-
-                // Barre de vie
-                const healthBarWidth = 40;
-                const healthBarHeight = 4;
-                const healthPercentage = zombie.health / 100;
-
-                ctx.fillStyle = '#ff0000';
-                ctx.fillRect(screenX - healthBarWidth / 2, screenY - 30, healthBarWidth, healthBarHeight);
-
-                ctx.fillStyle = '#00ff00';
-                ctx.fillRect(screenX - healthBarWidth / 2, screenY - 30, healthBarWidth * healthPercentage, healthBarHeight);
             });
         };
 
@@ -97,7 +206,7 @@ const CameraFeed: React.FC = () => {
             }
             window.removeEventListener('resize', resizeCanvas);
         };
-    }, [zombies, updateZombiePositions]);
+    }, [zombies, updateZombiePositions, currentPosition, deviceOrientation]);
 
     // Démarrer la caméra
     useEffect(() => {
@@ -156,34 +265,101 @@ const CameraFeed: React.FC = () => {
         const clickX = e.clientX - rect.left;
         const clickY = e.clientY - rect.top;
 
-        // Convertir les coordonnées de l'écran en coordonnées normalisées (-1 à 1)
-        const normalizedX = (clickX / rect.width) * 2 - 1;
-        const normalizedY = -((clickY / rect.height) * 2 - 1);
+        let hitZombie = false;
 
-        // Vérifier les collisions avec les zombies
-        zombies.forEach((zombie: Zombie) => {
-            if (!zombie.active) return;
+        // Vérifier les collisions avec les zombies fixes
+        if (currentPosition) {
+            zombies.forEach((zombie: Zombie) => {
+                if (!zombie.active) return;
 
-            const distance = Math.sqrt(
-                Math.pow(normalizedX - zombie.x, 2) +
-                Math.pow(normalizedY - zombie.y, 2)
-            );
+                if (zombie.fixed) {
+                    // Calculer la position à l'écran du zombie
+                    const distance = calculateDistance(
+                        currentPosition.latitude, currentPosition.longitude,
+                        zombie.latitude, zombie.longitude
+                    );
 
-            if (distance < 0.1) { // Rayon de collision
-                damageZombie(zombie.id, 50);
+                    const bearing = calculateBearing(
+                        currentPosition.latitude, currentPosition.longitude,
+                        zombie.latitude, zombie.longitude
+                    );
 
-                if (zombie.health <= 0) {
-                    removeZombie(zombie.id);
+                    const adjustedBearing = (bearing - deviceOrientation.alpha + 360) % 360;
+                    const bearingRad = (adjustedBearing * Math.PI) / 180;
+
+                    const scaleFactor = 1000;
+
+                    const screenX = rect.width / 2 + Math.sin(bearingRad) * distance * scaleFactor;
+                    const screenY = rect.height / 2 - Math.cos(bearingRad) * distance * scaleFactor;
+
+                    // Distance de tir en pixels
+                    const shotDistance = Math.sqrt(
+                        Math.pow(clickX - screenX, 2) +
+                        Math.pow(clickY - screenY, 2)
+                    );
+
+                    // Rayon de collision en pixels
+                    const hitRadius = 30;
+
+                    if (shotDistance < hitRadius && distance < 0.1) {
+                        damageZombie(zombie.id, 50);
+                        hitZombie = true;
+                    }
+                } else {
+                    // Pour les zombies non fixes, utiliser l'ancienne méthode
+                    const normalizedX = (clickX / rect.width) * 2 - 1;
+                    const normalizedY = -((clickY / rect.height) * 2 - 1);
+
+                    const distance = Math.sqrt(
+                        Math.pow(normalizedX - zombie.x, 2) +
+                        Math.pow(normalizedY - zombie.y, 2)
+                    );
+
+                    if (distance < 0.1) { // Rayon de collision
+                        damageZombie(zombie.id, 50);
+                        hitZombie = true;
+                    }
                 }
+            });
+        }
 
-                setShooting(true);
-                setTimeout(() => setShooting(false), 200);
-            }
-        });
-
-        // Effet visuel de tir même si aucun zombie n'est touché
+        // Effet visuel de tir
         setShooting(true);
         setTimeout(() => setShooting(false), 200);
+    };
+
+    // Fonction pour calculer la distance entre deux points GPS (en kilomètres)
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+        const R = 6371; // Rayon de la Terre en km
+        const dLat = deg2rad(lat2 - lat1);
+        const dLon = deg2rad(lon2 - lon1);
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
+
+    // Fonction pour calculer l'angle entre deux points GPS (en degrés)
+    const calculateBearing = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+        const dLon = deg2rad(lon2 - lon1);
+        const y = Math.sin(dLon) * Math.cos(deg2rad(lat2));
+        const x = Math.cos(deg2rad(lat1)) * Math.sin(deg2rad(lat2)) -
+            Math.sin(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.cos(dLon);
+        let brng = Math.atan2(y, x);
+        brng = rad2deg(brng);
+        return (brng + 360) % 360;
+    };
+
+    // Convertir degrés en radians
+    const deg2rad = (deg: number): number => {
+        return deg * (Math.PI / 180);
+    };
+
+    // Convertir radians en degrés
+    const rad2deg = (rad: number): number => {
+        return rad * (180 / Math.PI);
     };
 
     return (
