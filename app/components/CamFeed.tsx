@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useZombies, updateGlobalPosition } from '../hooks/useZombies';
+import { useHints } from '../hooks/useHints';
 
 interface Zombie {
     id: string;
@@ -28,14 +29,25 @@ const CameraFeed: React.FC = () => {
     const animationFrameRef = useRef<number | null>(null);
     const lastUpdateRef = useRef<number>(0);
     const zombieImageRef = useRef<HTMLImageElement | null>(null);
+    const scrollImageRef = useRef<HTMLImageElement | null>(null);
     const [currentPosition, setCurrentPosition] = useState<GeoPosition | null>(null);
     const [deviceOrientation, setDeviceOrientation] = useState({ alpha: 0, beta: 0, gamma: 0 });
+    const [showScroll, setShowScroll] = useState(false);
+
+    // Get current hint using the useHints hook
+    const { getCurrentHint } = useHints();
+    const currentHint = getCurrentHint();
 
     // Précharger l'image du zombie
     useEffect(() => {
         const image = new Image();
         image.src = '/zom.png';
         zombieImageRef.current = image;
+
+        // Précharger l'image du parchemin
+        const scrollImage = new Image();
+        scrollImage.src = '/scroll1.png';
+        scrollImageRef.current = scrollImage;
     }, []);
 
     // Utiliser le hook pour les zombies
@@ -299,6 +311,15 @@ const CameraFeed: React.FC = () => {
         };
     }, [addZombie]);
 
+    // Effect to handle showing/hiding the scroll with hint
+    useEffect(() => {
+        if (currentHint) {
+            setShowScroll(true);
+        } else {
+            setShowScroll(false);
+        }
+    }, [currentHint]);
+
     // Gérer le tir sur les zombies
     const handleShoot = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!canvasRef.current) return;
@@ -415,6 +436,36 @@ const CameraFeed: React.FC = () => {
         return rad * (180 / Math.PI);
     };
 
+    // Render the hint on the scroll
+    const renderHintScroll = () => {
+        if (!showScroll || !currentHint || !scrollImageRef.current) return null;
+
+        return (
+            <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex flex-col items-center justify-center z-30">
+                <div className="relative">
+                    <img
+                        src="/scroll1.png"
+                        alt="Scroll"
+                        className="w-80 h-auto"
+                    />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center px-16 pt-12 pb-20 text-center">
+                        <h3 className="text-xl font-bold mb-2 text-gray-800">Indice #{currentHint.hintNumber}</h3>
+                        <p className="text-gray-800 font-semibold">{currentHint.hint}</p>
+                        {currentHint.gameMap && (
+                            <p className="text-xs mt-2 text-gray-700">Zone: {currentHint.gameMap}</p>
+                        )}
+                    </div>
+                </div>
+                <button
+                    onClick={() => setShowScroll(false)}
+                    className="mt-4 bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-full shadow-lg"
+                >
+                    Fermer
+                </button>
+            </div>
+        );
+    };
+
     return (
         <div className='relative flex justify-center items-center'>
             <video
@@ -462,6 +513,7 @@ const CameraFeed: React.FC = () => {
                     <div className="absolute top-0 left-0 w-full h-full bg-red-500 bg-opacity-10"></div>
                 )}
             </div>
+            {renderHintScroll()}
         </div>
     );
 };
