@@ -240,7 +240,16 @@ const CameraFeed: React.FC = () => {
 
     // Ajouter des zombies périodiquement
     useEffect(() => {
-        const ZOMBIE_SPAWN_INTERVAL = 8000; // 8 secondes
+        const ZOMBIE_SPAWN_INTERVAL = 3000; // Réduit de 8000 à 3000 ms (3 secondes) pour plus de zombies
+
+        // Ajouter 5 zombies initiaux au démarrage
+        for (let i = 0; i < 5; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 0.5 + Math.random() * 0.5;
+            const x = Math.cos(angle) * distance;
+            const y = Math.sin(angle) * distance;
+            addZombie(x, y);
+        }
 
         const zombieInterval = setInterval(() => {
             // Créer un zombie à une position aléatoire autour de l'écran
@@ -249,7 +258,14 @@ const CameraFeed: React.FC = () => {
             const x = Math.cos(angle) * distance;
             const y = Math.sin(angle) * distance;
 
+            // Ajouter deux zombies à chaque intervalle au lieu d'un seul
             addZombie(x, y);
+
+            // Ajouter un second zombie dans une direction légèrement différente
+            const angle2 = (angle + Math.PI / 4) % (Math.PI * 2);
+            const x2 = Math.cos(angle2) * distance;
+            const y2 = Math.sin(angle2) * distance;
+            addZombie(x2, y2);
         }, ZOMBIE_SPAWN_INTERVAL);
 
         return () => {
