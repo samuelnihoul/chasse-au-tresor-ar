@@ -170,23 +170,33 @@ const CameraFeed: React.FC = () => {
 
                     // Ne dessiner le zombie que s'il est assez proche
                     if (distance < maxDistance) {
+                        // Calculer la taille du zombie en fonction de la distance
+                        // Plus le zombie est proche, plus il est grand
+                        const baseZombieSize = 60; // Taille de base en pixels
+                        const minZombieSize = 20; // Taille minimale en pixels
+
+                        // Formule de calcul de la taille : inversement proportionnelle à la distance
+                        // distance 0 -> taille maximale (baseZombieSize)
+                        // distance maxDistance -> taille minimale (minZombieSize)
+                        const distanceFactor = 1 - Math.min(distance / maxDistance, 0.9); // Limiter à 0.9 pour éviter zombies trop petits
+                        const zombieSize = minZombieSize + (baseZombieSize - minZombieSize) * distanceFactor;
+
                         // Dessiner le zombie
                         const zombieImage = zombieImageRef.current;
                         if (zombieImage) {
-                            const zombieSize = 40; // Taille de l'image du zombie
                             ctx.drawImage(zombieImage, screenX - zombieSize / 2, screenY - zombieSize / 2, zombieSize, zombieSize);
                         }
 
-                        // Barre de vie
-                        const healthBarWidth = 40;
-                        const healthBarHeight = 4;
+                        // Barre de vie - ajuster la taille en fonction de la taille du zombie
+                        const healthBarWidth = zombieSize;
+                        const healthBarHeight = Math.max(2, zombieSize / 15);
                         const healthPercentage = zombie.health / 100;
 
                         ctx.fillStyle = '#ff0000';
-                        ctx.fillRect(screenX - healthBarWidth / 2, screenY - 30, healthBarWidth, healthBarHeight);
+                        ctx.fillRect(screenX - healthBarWidth / 2, screenY - zombieSize / 2 - 10, healthBarWidth, healthBarHeight);
 
                         ctx.fillStyle = '#00ff00';
-                        ctx.fillRect(screenX - healthBarWidth / 2, screenY - 30, healthBarWidth * healthPercentage, healthBarHeight);
+                        ctx.fillRect(screenX - healthBarWidth / 2, screenY - zombieSize / 2 - 10, healthBarWidth * healthPercentage, healthBarHeight);
                     }
                 } else {
                     // Pour les zombies non fixes, utiliser l'ancienne méthode

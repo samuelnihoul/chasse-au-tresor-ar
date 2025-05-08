@@ -156,23 +156,89 @@ export const useZombies = create<ZombieState>((set) => ({
       zombies: state.zombies.map(zombie => {
         if (!zombie.active) return zombie;
 
-        // Ne pas mettre à jour la position des zombies fixes dans l'environnement
-        if (zombie.fixed) return zombie;
+        // Pour les zombies fixes, mettre à jour leur position pour qu'ils se rapprochent de l'utilisateur
+        if (zombie.fixed && globalLatitude !== 0 && globalLongitude !== 0) {
+          // Calculer la distance actuelle entre le zombie et l'utilisateur
+          const distance = calculateGpsDistance(
+            globalLatitude, globalLongitude,
+            zombie.latitude, zombie.longitude
+          );
+
+          // Ne déplacer que les zombies qui sont à moins de 800m
+          if (distance < 0.8) {
+            // Calculer la direction vers l'utilisateur
+            const bearing = calculateBearing(
+              zombie.latitude, zombie.longitude,
+              globalLatitude, globalLongitude
+            );
+
+            // Convertir l'angle en radians
+            const bearingRad = bearing * (Math.PI / 180);
+
+            // Vitesse de déplacement du zombie (en degrés de latitude/longitude)
+            // Plus le zombie est proche, plus il est rapide
+            const baseSpeed = 0.00001; // Vitesse de base
+            const speedMultiplier = Math.max(0.2, 1 - distance / 0.8); // Multiplicateur basé sur la distance
+            const moveSpeed = baseSpeed * speedMultiplier * zombie.speed;
+
+            // Calculer le déplacement en latitude et longitude
+            const dLat = Math.cos(bearingRad) * moveSpeed;
+            const dLon = Math.sin(bearingRad) * moveSpeed;
+
+            // Appliquer le déplacement
+            return {
+              ...zombie,
+              latitude: zombie.latitude + dLat,
+              longitude: zombie.longitude + dLon
+            };
+          }
+        }
 
         // Pour les zombies non fixes, continuer avec le mouvement brownien
-        const dx = (Math.random() - 0.5) * 0.02 * zombie.speed; // Déplacement horizontal
-        const dy = (Math.random() - 0.5) * 0.02 * zombie.speed; // Déplacement vertical
+        if (!zombie.fixed) {
+          const dx = (Math.random() - 0.5) * 0.02 * zombie.speed;
+          const dy = (Math.random() - 0.5) * 0.02 * zombie.speed;
 
-        // Calculer la nouvelle position
-        let newX = zombie.x + dx;
-        let newY = zombie.y + dy;
+          let newX = zombie.x + dx;
+          let newY = zombie.y + dy;
 
-        // Limiter les zombies dans les limites de l'écran (-1 à 1)
-        newX = Math.max(-1, Math.min(1, newX));
-        newY = Math.max(-1, Math.min(1, newY));
+          newX = Math.max(-1, Math.min(1, newX));
+          newY = Math.max(-1, Math.min(1, newY));
 
-        return { ...zombie, x: newX, y: newY };
+          return { ...zombie, x: newX, y: newY };
+        }
+
+        return zombie;
       })
     }));
   }
 }));
+
+// Fonction utilitaire pour calculer la distance entre deux points GPS (en kilomètres)
+const calculateGpsDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Rayon de la Terre en km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+// Fonction utilitaire pour calculer l'angle entre deux points GPS (en degrés)
+const calculateBearing = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const lat1Rad = lat1 * (Math.PI / 180);
+  const lat2Rad = lat2 * (Math.PI / 180);
+
+  const y = Math.sin(dLon) * Math.cos(lat2Rad);
+  const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) -
+    Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLon);
+
+  let brng = Math.atan2(y, x) * (180 / Math.PI);
+  brng = (brng + 360) % 360;
+
+  return brng;
+};
