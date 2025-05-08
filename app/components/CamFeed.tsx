@@ -172,7 +172,7 @@ const CameraFeed: React.FC = () => {
                     if (distance < maxDistance) {
                         // Calculer la taille du zombie en fonction de la distance
                         // Plus le zombie est proche, plus il est grand
-                        const baseZombieSize = 60; // Taille de base en pixels
+                        const baseZombieSize = 200; // Taille de base en pixels
                         const minZombieSize = 20; // Taille minimale en pixels
 
                         // Formule de calcul de la taille : inversement proportionnelle à la distance
