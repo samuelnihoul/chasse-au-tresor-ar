@@ -158,7 +158,7 @@ const CameraFeed: React.FC = () => {
                     const bearingRad = (adjustedBearing * Math.PI) / 180;
 
                     // Facteur d'échelle pour la distance (ajuster selon vos besoins)
-                    const scaleFactor = 1000;
+                    const scaleFactor = 10000;
 
                     // Calculer les coordonnées x et y à l'écran
                     // x positif vers la droite, y positif vers le bas
@@ -293,13 +293,15 @@ const CameraFeed: React.FC = () => {
     const handleShoot = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!canvasRef.current) return;
 
+        console.log("Tir détecté!");
+
         const rect = canvasRef.current.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
         const clickY = e.clientY - rect.top;
 
         let hitZombie = false;
 
-        // Vérifier les collisions avec les zombies fixes
+        // Vérifier les collisions avec les zombies
         if (currentPosition) {
             zombies.forEach((zombie: Zombie) => {
                 if (!zombie.active) return;
@@ -319,7 +321,8 @@ const CameraFeed: React.FC = () => {
                     const adjustedBearing = (bearing - deviceOrientation.alpha + 360) % 360;
                     const bearingRad = (adjustedBearing * Math.PI) / 180;
 
-                    const scaleFactor = 1000;
+                    // Utiliser le même facteur d'échelle que pour le rendu
+                    const scaleFactor = 10000;
 
                     const screenX = rect.width / 2 + Math.sin(bearingRad) * distance * scaleFactor;
                     const screenY = rect.height / 2 - Math.cos(bearingRad) * distance * scaleFactor;
@@ -330,10 +333,12 @@ const CameraFeed: React.FC = () => {
                         Math.pow(clickY - screenY, 2)
                     );
 
-                    // Rayon de collision en pixels
-                    const hitRadius = 30;
+                    // Rayon de collision en pixels - légèrement augmenté pour faciliter le tir
+                    const hitRadius = 50;
 
-                    if (shotDistance < hitRadius && distance < 0.1) {
+                    // Permettre de toucher les zombies à la même distance que celle à laquelle ils sont visibles
+                    if (shotDistance < hitRadius && distance < 1.0) {
+                        console.log(`Zombie touché! ID: ${zombie.id}, Distance: ${distance.toFixed(3)} km, Écart de tir: ${shotDistance.toFixed(0)} px`);
                         damageZombie(zombie.id, 50);
                         hitZombie = true;
                     }
@@ -347,7 +352,8 @@ const CameraFeed: React.FC = () => {
                         Math.pow(normalizedY - zombie.y, 2)
                     );
 
-                    if (distance < 0.1) { // Rayon de collision
+                    if (distance < 0.2) { // Rayon de collision augmenté
+                        console.log(`Zombie non-fixe touché! ID: ${zombie.id}`);
                         damageZombie(zombie.id, 50);
                         hitZombie = true;
                     }
@@ -358,6 +364,11 @@ const CameraFeed: React.FC = () => {
         // Effet visuel de tir
         setShooting(true);
         setTimeout(() => setShooting(false), 200);
+
+        // Retour visuel si aucun zombie n'a été touché
+        if (!hitZombie) {
+            console.log("Aucun zombie touché");
+        }
     };
 
     // Fonction pour calculer la distance entre deux points GPS (en kilomètres)
