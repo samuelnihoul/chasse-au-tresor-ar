@@ -37,7 +37,7 @@ export default function AdminPage() {
         fetchCoordinates();
         const interval = setInterval(fetchCoordinates, 100000);
         return () => clearInterval(interval);
-    }, []);
+    }, [editingId]);
 
     const handleEdit = (coord: Coordinate) => {
         setEditingId(coord.id);
