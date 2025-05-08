@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { useZombies } from '../hooks/useZombies';
+import { useZombies, updateGlobalPosition } from '../hooks/useZombies';
 
 interface Zombie {
     id: string;
@@ -41,22 +41,38 @@ const CameraFeed: React.FC = () => {
     // Utiliser le hook pour les zombies
     const { zombies, addZombie, damageZombie, removeZombie, score, updateZombiePositions } = useZombies();
 
-    // Obtenir la position GPS
+    // Obtenir la position GPS et la partager globalement
     useEffect(() => {
         if (!navigator.geolocation) {
             console.warn("La géolocalisation n'est pas prise en charge par ce navigateur.");
             return;
         }
 
+        // Position initiale immédiate si disponible
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                console.log("Position initiale obtenue:", latitude, longitude);
+
+                // Mettre à jour à la fois l'état local et la position globale
+                setCurrentPosition({ latitude, longitude });
+                updateGlobalPosition(latitude, longitude);
+            },
+            (error) => console.warn("Erreur de géolocalisation initiale:", error),
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+
+        // Surveillance continue de la position
         const watchId = navigator.geolocation.watchPosition(
             (position) => {
-                setCurrentPosition({
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude
-                });
+                const { latitude, longitude } = position.coords;
+
+                // Mettre à jour à la fois l'état local et la position globale
+                setCurrentPosition({ latitude, longitude });
+                updateGlobalPosition(latitude, longitude);
             },
             (error) => {
-                console.warn("Erreur de géolocalisation :", error);
+                console.warn("Erreur de géolocalisation:", error);
             },
             {
                 enableHighAccuracy: true,
@@ -150,7 +166,7 @@ const CameraFeed: React.FC = () => {
                     const screenY = canvas.height / 2 - Math.cos(bearingRad) * distance * scaleFactor;
 
                     // Facteur de distance pour déterminer si le zombie est visible
-                    const maxDistance = 0.3; // Augmentation de 0.1 à 0.3 km (300 mètres)
+                    const maxDistance = 1.0; // Augmenté à 1 km pour une meilleure visibilité
 
                     // Ne dessiner le zombie que s'il est assez proche
                     if (distance < maxDistance) {

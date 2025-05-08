@@ -2,6 +2,17 @@
 
 import { create } from 'zustand';
 
+// Variables globales pour stocker la position actuelle
+let globalLatitude = 0;
+let globalLongitude = 0;
+
+// Fonction pour mettre à jour la position globale
+export const updateGlobalPosition = (latitude: number, longitude: number) => {
+  globalLatitude = latitude;
+  globalLongitude = longitude;
+  console.log('Position globale mise à jour:', globalLatitude, globalLongitude);
+};
+
 interface Zombie {
   id: string;
   x: number;
@@ -35,33 +46,21 @@ export const useZombies = create<ZombieState>((set) => ({
   score: 0,
 
   addZombie: (x: number, y: number) => {
-    // Utiliser les coordonnées GPS de l'utilisateur au lieu de valeurs hardcodées
-    // Récupérer la position de l'utilisateur via le navigateur
-    let currentLatitude = 0;
-    let currentLongitude = 0;
+    // Utiliser les coordonnées GPS globales si disponibles
+    let zombieLatitude, zombieLongitude;
 
-    // Tenter de récupérer la position actuelle
-    if (navigator.geolocation) {
-      try {
-        navigator.geolocation.getCurrentPosition((position) => {
-          currentLatitude = position.coords.latitude;
-          currentLongitude = position.coords.longitude;
-        });
-      } catch (error) {
-        console.warn("Couldn't get geolocation, using default values", error);
-      }
+    if (globalLatitude !== 0 && globalLongitude !== 0) {
+      // Nous avons une position valide, ajouter des variations aléatoires
+      zombieLatitude = globalLatitude + (Math.random() * 0.002 - 0.001);
+      zombieLongitude = globalLongitude + (Math.random() * 0.002 - 0.001);
+      console.log('Création de zombie à la position:', zombieLatitude, zombieLongitude);
+    } else {
+      // Pas de position valide, utiliser des coordonnées par défaut avec variation aléatoire
+      // Utiliser des valeurs par défaut avec une grande variation pour que certains zombies soient toujours visibles
+      zombieLatitude = 48.8566 + (Math.random() * 0.01 - 0.005);
+      zombieLongitude = 2.3522 + (Math.random() * 0.01 - 0.005);
+      console.log('Création de zombie avec position par défaut');
     }
-
-    // Si la géolocalisation n'est pas disponible, utiliser des valeurs par défaut
-    if (currentLatitude === 0 && currentLongitude === 0) {
-      currentLatitude = 48.8566;
-      currentLongitude = 2.3522;
-    }
-
-    // Ajouter une petite variation aléatoire pour disperser les zombies autour de l'utilisateur
-    // Cette variation de 0.001 correspond à environ 100m
-    const zombieLatitude = currentLatitude + (Math.random() * 0.002 - 0.001);
-    const zombieLongitude = currentLongitude + (Math.random() * 0.002 - 0.001);
 
     const newZombie: Zombie = {
       id: `zombie-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
