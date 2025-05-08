@@ -44,7 +44,7 @@ const CameraFeed: React.FC = () => {
     // Obtenir la position GPS
     useEffect(() => {
         if (!navigator.geolocation) {
-            console.error("La géolocalisation n'est pas prise en charge par ce navigateur.");
+            console.warn("La géolocalisation n'est pas prise en charge par ce navigateur.");
             return;
         }
 
@@ -56,7 +56,7 @@ const CameraFeed: React.FC = () => {
                 });
             },
             (error) => {
-                console.error("Erreur de géolocalisation :", error);
+                console.warn("Erreur de géolocalisation :", error);
             },
             {
                 enableHighAccuracy: true,
@@ -150,7 +150,7 @@ const CameraFeed: React.FC = () => {
                     const screenY = canvas.height / 2 - Math.cos(bearingRad) * distance * scaleFactor;
 
                     // Facteur de distance pour déterminer si le zombie est visible
-                    const maxDistance = 0.1; // en kilomètres
+                    const maxDistance = 0.3; // Augmentation de 0.1 à 0.3 km (300 mètres)
 
                     // Ne dessiner le zombie que s'il est assez proche
                     if (distance < maxDistance) {

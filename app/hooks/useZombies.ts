@@ -35,16 +35,40 @@ export const useZombies = create<ZombieState>((set) => ({
   score: 0,
 
   addZombie: (x: number, y: number) => {
-    // Obtenir les coordonnées GPS actuelles (simulation pour cet exemple)
-    const currentLatitude = Math.random() * 0.001 + 48.8566; // Simule une position autour de Paris
-    const currentLongitude = Math.random() * 0.001 + 2.3522;
+    // Utiliser les coordonnées GPS de l'utilisateur au lieu de valeurs hardcodées
+    // Récupérer la position de l'utilisateur via le navigateur
+    let currentLatitude = 0;
+    let currentLongitude = 0;
+
+    // Tenter de récupérer la position actuelle
+    if (navigator.geolocation) {
+      try {
+        navigator.geolocation.getCurrentPosition((position) => {
+          currentLatitude = position.coords.latitude;
+          currentLongitude = position.coords.longitude;
+        });
+      } catch (error) {
+        console.warn("Couldn't get geolocation, using default values", error);
+      }
+    }
+
+    // Si la géolocalisation n'est pas disponible, utiliser des valeurs par défaut
+    if (currentLatitude === 0 && currentLongitude === 0) {
+      currentLatitude = 48.8566;
+      currentLongitude = 2.3522;
+    }
+
+    // Ajouter une petite variation aléatoire pour disperser les zombies autour de l'utilisateur
+    // Cette variation de 0.001 correspond à environ 100m
+    const zombieLatitude = currentLatitude + (Math.random() * 0.002 - 0.001);
+    const zombieLongitude = currentLongitude + (Math.random() * 0.002 - 0.001);
 
     const newZombie: Zombie = {
       id: `zombie-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       x,
       y,
-      latitude: currentLatitude,
-      longitude: currentLongitude,
+      latitude: zombieLatitude,
+      longitude: zombieLongitude,
       health: 100,
       speed: 0.5 + Math.random() * 1.5, // Vitesse aléatoire entre 0.5 et 2
       active: true,
