@@ -33,6 +33,7 @@ const CameraFeed: React.FC = () => {
     const [currentPosition, setCurrentPosition] = useState<GeoPosition | null>(null);
     const [deviceOrientation, setDeviceOrientation] = useState({ alpha: 0, beta: 0, gamma: 0 });
     const [showScroll, setShowScroll] = useState(false);
+    const [isPaused, setIsPaused] = useState(false);
 
     // Get current hint using the useHints hook
     const { getCurrentHint } = useHints();
@@ -89,7 +90,7 @@ const CameraFeed: React.FC = () => {
             {
                 enableHighAccuracy: true,
                 maximumAge: 0,
-                timeout: 5000
+                timeout: 10000
             }
         );
 
@@ -278,6 +279,7 @@ const CameraFeed: React.FC = () => {
 
     // Ajouter des zombies périodiquement
     useEffect(() => {
+        if (isPaused) return; // Do not spawn if paused
         const ZOMBIE_SPAWN_INTERVAL = 3000; // Réduit de 8000 à 3000 ms (3 secondes) pour plus de zombies
 
         // Ajouter 5 zombies initiaux au démarrage
@@ -309,7 +311,7 @@ const CameraFeed: React.FC = () => {
         return () => {
             clearInterval(zombieInterval);
         };
-    }, [addZombie]);
+    }, [addZombie, isPaused]);
 
     // Effect to handle showing/hiding the scroll with hint
     useEffect(() => {
@@ -512,6 +514,14 @@ const CameraFeed: React.FC = () => {
                 {shooting && (
                     <div className="absolute top-0 left-0 w-full h-full bg-red-500 bg-opacity-10"></div>
                 )}
+
+                {/* Pause Button */}
+                <button
+                    onClick={() => setIsPaused((prev) => !prev)}
+                    className={`absolute top-4 left-4 px-4 py-2 rounded-lg font-bold shadow-lg transition-all duration-300 ${isPaused ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}
+                >
+                    {isPaused ? 'Reprendre' : 'Pause'}
+                </button>
             </div>
             {renderHintScroll()}
         </div>

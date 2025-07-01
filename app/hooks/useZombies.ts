@@ -39,7 +39,7 @@ interface ZombieState {
   updateZombiePositions: () => void;
 }
 
-const MAX_ZOMBIES = 30; // Augmenté de 10 à 30 pour avoir plus de zombies
+const MAX_ZOMBIES = 10; // Limite réduite à 10 zombies maximum
 
 export const useZombies = create<ZombieState>((set) => ({
   zombies: [],

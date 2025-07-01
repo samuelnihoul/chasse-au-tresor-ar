@@ -146,7 +146,7 @@ const UserLocation: React.FC = () => {
                 console.error('Error getting location:', error);
             }, {
                 enableHighAccuracy: true,
-                timeout: 5000,
+                timeout: 10000,
                 maximumAge: 0
             });
         } else {

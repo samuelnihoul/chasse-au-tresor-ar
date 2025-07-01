@@ -89,39 +89,38 @@ export const useUserPosition = () => {
     const { setDistanceToNextHint, getNextHint } = useHints();
 
     useEffect(() => {
-        const updateDistance = () => {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const nextHint = getNextHint();
-                        if (nextHint) {
-                            const distance = calculateDistance(
-                                position.coords.latitude,
-                                position.coords.longitude,
-                                nextHint.latitude,
-                                nextHint.longitude
-                            );
-                            setDistanceToNextHint(distance);
-                        }
-                    },
-                    (error) => {
-                        console.error('Error getting location:', error);
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 5000,
-                        maximumAge: 0
+        let watchId: number | null = null;
+
+        if (navigator.geolocation) {
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    const nextHint = getNextHint();
+                    if (nextHint) {
+                        const distance = calculateDistance(
+                            position.coords.latitude,
+                            position.coords.longitude,
+                            nextHint.latitude,
+                            nextHint.longitude
+                        );
+                        setDistanceToNextHint(distance);
                     }
-                );
+                },
+                (error) => {
+                    console.error('Error getting location:', error);
+                    setDistanceToNextHint(null); // Optionally reset distance
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000, // Give more time for a fix
+                    maximumAge: 1000
+                }
+            );
+        }
+
+        return () => {
+            if (watchId !== null && navigator.geolocation) {
+                navigator.geolocation.clearWatch(watchId);
             }
         };
-
-        // Mise à jour initiale
-        updateDistance();
-
-        // Mise à jour toutes les 2 secondes
-        const interval = setInterval(updateDistance, 2000);
-
-        return () => clearInterval(interval);
     }, [setDistanceToNextHint, getNextHint]);
 };
