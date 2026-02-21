@@ -34,6 +34,7 @@ const CameraFeed: React.FC = () => {
     const [deviceOrientation, setDeviceOrientation] = useState({ alpha: 0, beta: 0, gamma: 0 });
     const [showScroll, setShowScroll] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
+    const [hitEffects, setHitEffects] = useState<{id: string, x: number, y: number, timestamp: number}[]>([]);
 
     // Get current hint using the useHints hook
     const { getCurrentHint } = useHints();
@@ -52,7 +53,7 @@ const CameraFeed: React.FC = () => {
     }, []);
 
     // Utiliser le hook pour les zombies
-    const { zombies, addZombie, damageZombie, removeZombie, score, updateZombiePositions } = useZombies();
+    const { zombies, addZombie, damageZombie, removeZombie, score, updateZombiePositions, resetZombies } = useZombies();
 
     // Obtenir la position GPS et la partager globalement
     useEffect(() => {
@@ -146,6 +147,32 @@ const CameraFeed: React.FC = () => {
             // Effacer le canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // Dessiner les effets de tir
+            const currentTime = Date.now();
+            setHitEffects(prev => prev.filter(effect => currentTime - effect.timestamp < 500)); // Garder les effets pour 500ms
+            
+            hitEffects.forEach(effect => {
+                const age = currentTime - effect.timestamp;
+                const opacity = 1 - (age / 500); // Fondu progressif
+                const size = 20 + (age / 25); // Agrandissement progressif
+                
+                ctx.strokeStyle = `rgba(255, 255, 0, ${opacity})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(effect.x, effect.y, size, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Étoiles au centre pour l'impact
+                ctx.fillStyle = `rgba(255, 255, 0, ${opacity})`;
+                const starSize = 5;
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i * Math.PI) / 4;
+                    const x = effect.x + Math.cos(angle) * starSize;
+                    const y = effect.y + Math.sin(angle) * starSize;
+                    ctx.fillRect(x - 1, y - 1, 2, 2);
+                }
+            });
+
             // Dessiner les zombies
             zombies.forEach((zombie: Zombie) => {
                 if (!zombie.active) return;
@@ -194,45 +221,125 @@ const CameraFeed: React.FC = () => {
                         const distanceFactor = 1 - Math.min(distance / maxDistance, 0.9); // Limiter à 0.9 pour éviter zombies trop petits
                         const zombieSize = minZombieSize + (baseZombieSize - minZombieSize) * distanceFactor;
 
+                        // Effet d'ombre pour le zombie
+                        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                        ctx.shadowBlur = 15;
+                        ctx.shadowOffsetX = 5;
+                        ctx.shadowOffsetY = 5;
+                        
                         // Dessiner le zombie
                         const zombieImage = zombieImageRef.current;
                         if (zombieImage) {
                             ctx.drawImage(zombieImage, screenX - zombieSize / 2, screenY - zombieSize / 2, zombieSize, zombieSize);
                         }
+                        
+                        // Réinitialiser l'ombre
+                        ctx.shadowColor = 'transparent';
+                        ctx.shadowBlur = 0;
+                        ctx.shadowOffsetX = 0;
+                        ctx.shadowOffsetY = 0;
+                        
+                        // Effet de lueur rouge pour les zombies endommagés
+                        if (zombie.health < 100) {
+                            ctx.fillStyle = `rgba(255, 0, 0, ${0.3 * (1 - zombie.health / 100)})`;
+                            ctx.beginPath();
+                            ctx.arc(screenX, screenY, zombieSize / 2, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
 
-                        // Barre de vie - ajuster la taille en fonction de la taille du zombie
+                        // Barre de vie améliorée avec effets
                         const healthBarWidth = zombieSize;
-                        const healthBarHeight = Math.max(2, zombieSize / 15);
+                        const healthBarHeight = Math.max(4, zombieSize / 12);
                         const healthPercentage = zombie.health / 100;
+                        const healthBarY = screenY - zombieSize / 2 - 15;
 
-                        ctx.fillStyle = '#ff0000';
-                        ctx.fillRect(screenX - healthBarWidth / 2, screenY - zombieSize / 2 - 10, healthBarWidth, healthBarHeight);
-
-                        ctx.fillStyle = '#00ff00';
-                        ctx.fillRect(screenX - healthBarWidth / 2, screenY - zombieSize / 2 - 10, healthBarWidth * healthPercentage, healthBarHeight);
+                        // Fond de la barre de vie avec ombre
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                        ctx.fillRect(screenX - healthBarWidth / 2 + 2, healthBarY + 2, healthBarWidth, healthBarHeight);
+                        
+                        // Fond rouge
+                        ctx.fillStyle = '#8B0000';
+                        ctx.fillRect(screenX - healthBarWidth / 2, healthBarY, healthBarWidth, healthBarHeight);
+                        
+                        // Barre de vie verte avec dégradé
+                        const gradient = ctx.createLinearGradient(
+                            screenX - healthBarWidth / 2, healthBarY,
+                            screenX - healthBarWidth / 2 + healthBarWidth * healthPercentage, healthBarY
+                        );
+                        gradient.addColorStop(0, '#FF6B6B');
+                        gradient.addColorStop(0.5, '#4ECDC4');
+                        gradient.addColorStop(1, '#44D362');
+                        
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(screenX - healthBarWidth / 2, healthBarY, healthBarWidth * healthPercentage, healthBarHeight);
+                        
+                        // Bordure de la barre de vie
+                        ctx.strokeStyle = '#333';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(screenX - healthBarWidth / 2, healthBarY, healthBarWidth, healthBarHeight);
                     }
                 } else {
                     // Pour les zombies non fixes, utiliser l'ancienne méthode
                     const screenX = (zombie.x + 1) * (canvas.width / 2);
                     const screenY = (-zombie.y + 1) * (canvas.height / 2);
+                    const zombieSize = 40; // Taille fixe pour les zombies non fixes
 
+                    // Effet d'ombre pour le zombie
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowOffsetX = 3;
+                    ctx.shadowOffsetY = 3;
+                    
                     // Dessiner le zombie
                     const zombieImage = zombieImageRef.current;
                     if (zombieImage) {
-                        const zombieSize = 40; // Taille de l'image du zombie
                         ctx.drawImage(zombieImage, screenX - zombieSize / 2, screenY - zombieSize / 2, zombieSize, zombieSize);
                     }
+                    
+                    // Réinitialiser l'ombre
+                    ctx.shadowColor = 'transparent';
+                    ctx.shadowBlur = 0;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+                    
+                    // Effet de lueur rouge pour les zombies endommagés
+                    if (zombie.health < 100) {
+                        ctx.fillStyle = `rgba(255, 0, 0, ${0.3 * (1 - zombie.health / 100)})`;
+                        ctx.beginPath();
+                        ctx.arc(screenX, screenY, zombieSize / 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
 
-                    // Barre de vie
+                    // Barre de vie améliorée
                     const healthBarWidth = 40;
-                    const healthBarHeight = 4;
+                    const healthBarHeight = 6;
                     const healthPercentage = zombie.health / 100;
+                    const healthBarY = screenY - 35;
 
-                    ctx.fillStyle = '#ff0000';
-                    ctx.fillRect(screenX - healthBarWidth / 2, screenY - 30, healthBarWidth, healthBarHeight);
-
-                    ctx.fillStyle = '#00ff00';
-                    ctx.fillRect(screenX - healthBarWidth / 2, screenY - 30, healthBarWidth * healthPercentage, healthBarHeight);
+                    // Fond de la barre de vie avec ombre
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    ctx.fillRect(screenX - healthBarWidth / 2 + 2, healthBarY + 2, healthBarWidth, healthBarHeight);
+                    
+                    // Fond rouge
+                    ctx.fillStyle = '#8B0000';
+                    ctx.fillRect(screenX - healthBarWidth / 2, healthBarY, healthBarWidth, healthBarHeight);
+                    
+                    // Barre de vie verte avec dégradé
+                    const gradient = ctx.createLinearGradient(
+                        screenX - healthBarWidth / 2, healthBarY,
+                        screenX - healthBarWidth / 2 + healthBarWidth * healthPercentage, healthBarY
+                    );
+                    gradient.addColorStop(0, '#FF6B6B');
+                    gradient.addColorStop(0.5, '#4ECDC4');
+                    gradient.addColorStop(1, '#44D362');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(screenX - healthBarWidth / 2, healthBarY, healthBarWidth * healthPercentage, healthBarHeight);
+                    
+                    // Bordure de la barre de vie
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(screenX - healthBarWidth / 2, healthBarY, healthBarWidth, healthBarHeight);
                 }
             });
         };
@@ -277,12 +384,22 @@ const CameraFeed: React.FC = () => {
         };
     }, []);
 
-    // Ajouter des zombies périodiquement
+    // Ajouter des zombies périodiquement - seulement après le deuxième indice
     useEffect(() => {
         if (isPaused) return; // Do not spawn if paused
+        
+        // Vérifier si nous sommes au-delà du deuxième indice
+        const shouldSpawnZombies = currentHint && currentHint.hintNumber > 1;
+        
+        // Si nous ne sommes pas au-delà du deuxième indice, nettoyer tous les zombies existants
+        if (!shouldSpawnZombies) {
+            resetZombies();
+            return;
+        }
+
         const ZOMBIE_SPAWN_INTERVAL = 3000; // Réduit de 8000 à 3000 ms (3 secondes) pour plus de zombies
 
-        // Ajouter 5 zombies initiaux au démarrage
+        // Ajouter 5 zombies initiaux au démarrage (seulement si on est au-delà du deuxième indice)
         for (let i = 0; i < 5; i++) {
             const angle = Math.random() * Math.PI * 2;
             const distance = 0.5 + Math.random() * 0.5;
@@ -311,7 +428,7 @@ const CameraFeed: React.FC = () => {
         return () => {
             clearInterval(zombieInterval);
         };
-    }, [addZombie, isPaused]);
+    }, [addZombie, isPaused, currentHint, resetZombies]);
 
     // Effect to handle showing/hiding the scroll with hint
     useEffect(() => {
@@ -374,6 +491,14 @@ const CameraFeed: React.FC = () => {
                         console.log(`Zombie touché! ID: ${zombie.id}, Distance: ${distance.toFixed(3)} km, Écart de tir: ${shotDistance.toFixed(0)} px`);
                         damageZombie(zombie.id, 50);
                         hitZombie = true;
+                        
+                        // Ajouter un effet de tir à la position du zombie
+                        setHitEffects(prev => [...prev, {
+                            id: zombie.id,
+                            x: screenX,
+                            y: screenY,
+                            timestamp: Date.now()
+                        }]);
                     }
                 } else {
                     // Pour les zombies non fixes, utiliser l'ancienne méthode
@@ -389,14 +514,32 @@ const CameraFeed: React.FC = () => {
                         console.log(`Zombie non-fixe touché! ID: ${zombie.id}`);
                         damageZombie(zombie.id, 50);
                         hitZombie = true;
+                        
+                        // Ajouter un effet de tir à la position du zombie
+                        setHitEffects(prev => [...prev, {
+                            id: zombie.id,
+                            x: screenX,
+                            y: screenY,
+                            timestamp: Date.now()
+                        }]);
                     }
                 }
             });
         }
 
-        // Effet visuel de tir
+        // Effet visuel de tir amélioré
         setShooting(true);
         setTimeout(() => setShooting(false), 200);
+        
+        // Ajouter un effet de tir à la position du clic même si aucun zombie n'est touché
+        if (!hitZombie) {
+            setHitEffects(prev => [...prev, {
+                id: `miss-${Date.now()}`,
+                x: clickX,
+                y: clickY,
+                timestamp: Date.now()
+            }]);
+        }
 
         // Retour visuel si aucun zombie n'a été touché
         if (!hitZombie) {
@@ -498,10 +641,22 @@ const CameraFeed: React.FC = () => {
                 className="absolute top-0 left-0 w-full h-full"
                 onClick={handleShoot}
             >
-                {/* Viseur */}
+                {/* Viseur amélioré avec animations */}
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                    <div className={`w-10 h-10 border-2 rounded-full ${shooting ? 'border-red-500' : 'border-white'} flex items-center justify-center`}>
-                        <div className={`w-2 h-2 rounded-full ${shooting ? 'bg-red-500' : 'bg-white'}`}></div>
+                    <div className={`relative ${shooting ? 'animate-pulse' : ''}`}>
+                        {/* Cercle extérieur */}
+                        <div className={`absolute inset-0 w-12 h-12 border-2 rounded-full ${shooting ? 'border-red-500' : 'border-white'} transition-colors duration-200`}></div>
+                        {/* Cercle intérieur */}
+                        <div className={`absolute inset-2 w-8 h-8 border rounded-full ${shooting ? 'border-red-400' : 'border-gray-300'} transition-colors duration-200`}></div>
+                        {/* Point central */}
+                        <div className={`absolute inset-0 flex items-center justify-center`}>
+                            <div className={`w-2 h-2 rounded-full ${shooting ? 'bg-red-500' : 'bg-white'} transition-colors duration-200`}></div>
+                        </div>
+                        {/* Lignes du viseur */}
+                        <div className={`absolute inset-0 flex items-center justify-center`}>
+                            <div className={`absolute w-16 h-0.5 ${shooting ? 'bg-red-500' : 'bg-white'} transition-colors duration-200`}></div>
+                            <div className={`absolute w-0.5 h-16 ${shooting ? 'bg-red-500' : 'bg-white'} transition-colors duration-200`}></div>
+                        </div>
                     </div>
                 </div>
 
