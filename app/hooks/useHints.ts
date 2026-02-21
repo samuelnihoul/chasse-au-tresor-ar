@@ -30,7 +30,7 @@ interface HintState {
 
 export const useHints = create<HintState>((set, get) => ({
     hints: [],
-    currentHintIndex: 0,
+    currentHintIndex: -1, // Start with -1 to indicate no hint has been reached yet
     loading: false,
     error: null,
     distanceToNextHint: null,
@@ -58,13 +58,17 @@ export const useHints = create<HintState>((set, get) => ({
 
     getCurrentHint: () => {
         const { hints, currentHintIndex } = get();
-        return hints.length > 0 && currentHintIndex < hints.length
+        return hints.length > 0 && currentHintIndex >= 0 && currentHintIndex < hints.length
             ? hints[currentHintIndex]
             : null;
     },
 
     getNextHint: () => {
         const { hints, currentHintIndex } = get();
+        // If no hint has been reached yet, return the first hint
+        if (currentHintIndex === -1 && hints.length > 0) {
+            return hints[0];
+        }
         return hints.length > 0 && currentHintIndex < hints.length - 1
             ? hints[currentHintIndex + 1]
             : null;

@@ -642,21 +642,23 @@ const CameraFeed: React.FC = () => {
                 onClick={handleShoot}
             >
                 {/* Viseur amélioré avec animations */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                    <div className={`relative ${shooting ? 'animate-pulse' : ''}`}>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                    <div className={`relative w-16 h-16 ${shooting ? 'animate-pulse' : ''}`}>
+                        {/* Lignes horizontales et verticales */}
+                        <div className={`absolute top-1/2 left-0 right-0 h-0.5 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-y-1/2 transition-colors duration-200`}></div>
+                        <div className={`absolute left-1/2 top-0 bottom-0 w-0.5 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-x-1/2 transition-colors duration-200`}></div>
+                        
                         {/* Cercle extérieur */}
-                        <div className={`absolute inset-0 w-12 h-12 border-2 rounded-full ${shooting ? 'border-red-500' : 'border-white'} transition-colors duration-200`}></div>
-                        {/* Cercle intérieur */}
-                        <div className={`absolute inset-2 w-8 h-8 border rounded-full ${shooting ? 'border-red-400' : 'border-gray-300'} transition-colors duration-200`}></div>
+                        <div className={`absolute inset-0 border-2 rounded-full ${shooting ? 'border-red-500' : 'border-white'} transition-colors duration-200`}></div>
+                        
                         {/* Point central */}
-                        <div className={`absolute inset-0 flex items-center justify-center`}>
-                            <div className={`w-2 h-2 rounded-full ${shooting ? 'bg-red-500' : 'bg-white'} transition-colors duration-200`}></div>
-                        </div>
-                        {/* Lignes du viseur */}
-                        <div className={`absolute inset-0 flex items-center justify-center`}>
-                            <div className={`absolute w-16 h-0.5 ${shooting ? 'bg-red-500' : 'bg-white'} transition-colors duration-200`}></div>
-                            <div className={`absolute w-0.5 h-16 ${shooting ? 'bg-red-500' : 'bg-white'} transition-colors duration-200`}></div>
-                        </div>
+                        <div className={`absolute top-1/2 left-1/2 w-2 h-2 rounded-full ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-x-1/2 -translate-y-1/2 transition-colors duration-200`}></div>
+                        
+                        {/* Coins pour un look plus professionnel */}
+                        <div className={`absolute top-0 left-1/2 w-3 h-0.5 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-x-1/2 transition-colors duration-200`}></div>
+                        <div className={`absolute bottom-0 left-1/2 w-3 h-0.5 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-x-1/2 transition-colors duration-200`}></div>
+                        <div className={`absolute left-0 top-1/2 w-0.5 h-3 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-y-1/2 transition-colors duration-200`}></div>
+                        <div className={`absolute right-0 top-1/2 w-0.5 h-3 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-y-1/2 transition-colors duration-200`}></div>
                     </div>
                 </div>
 

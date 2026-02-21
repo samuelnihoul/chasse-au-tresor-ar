@@ -282,20 +282,25 @@ const UserLocation: React.FC = () => {
 
                     {startPosition && (
                         <div className="mt-2">
-                            <p className="font-semibold">Distance depuis le départ :</p>
-                            <p>{(distanceFromStart < 1000)
-                                ? `${distanceFromStart.toFixed(0)} m`
-                                : `${(distanceFromStart / 1000).toFixed(2)} km`}
-                            </p>
-                            <p className="text-green-400">
-                                Calories brûlées : {caloriesBurned} kcal
-                            </p>
+                            <p className="font-semibold">Distance jusqu'au prochain indice :</p>
+                            {nextHintObj && distanceToNextHint !== null ? (
+                                <p className={(distanceToNextHint < 50) ? "text-green-400 font-bold" : "text-white"}>
+                                    {(distanceToNextHint < 1000)
+                                        ? `${distanceToNextHint.toFixed(0)} m`
+                                        : `${(distanceToNextHint / 1000).toFixed(2)} km`}
+                                    {distanceToNextHint < 50 && (
+                                        <span className="ml-2 animate-pulse">🎯</span>
+                                    )}
+                                </p>
+                            ) : (
+                                <p className="text-gray-400">Recherche du prochain indice...</p>
+                            )}
                         </div>
                     )}
 
                     {currentHint && (
                         <div className="mt-2 p-2 bg-purple-900 bg-opacity-50 rounded">
-                            <p className="font-bold">Indice actuel ({currentHint.hintNumber}):</p>
+                            <p className="font-bold">Indice atteint ({currentHint.hintNumber}):</p>
                             <p>{currentHint.hint}</p>
                             <p className="text-sm">Carte: {currentHint.gameMap}</p>
                         </div>
@@ -304,10 +309,7 @@ const UserLocation: React.FC = () => {
                     {nextHintObj && distanceToNextHint !== null && (
                         <div className="mt-2">
                             <p className="font-semibold">Prochain indice: #{nextHintObj.hintNumber}</p>
-                            <p>Distance: {(distanceToNextHint < 1000)
-                                ? `${distanceToNextHint.toFixed(0)} m`
-                                : `${(distanceToNextHint / 1000).toFixed(2)} km`}
-                            </p>
+                            <p className="text-sm text-gray-300">Direction: Suivez la flèche ↑</p>
                             {isNearHint && (
                                 <p className="text-green-400 font-bold animate-pulse">
                                     Vous êtes arrivé à l'indice!
