@@ -36,9 +36,35 @@ export const useHints = create<HintState>((set, get) => ({
     distanceToNextHint: null,
 
     setHints: (hints: Coordinate[]) => {
-        // Trier les indices par numéro d'indice
         const sortedHints = [...hints].sort((a, b) => a.hintNumber - b.hintNumber);
-        set({ hints: sortedHints });
+        const { currentHintIndex, hints: previousHints } = get();
+
+        if (sortedHints.length === 0) {
+            set({ hints: [], currentHintIndex: -1, distanceToNextHint: null });
+            return;
+        }
+
+        if (currentHintIndex < 0 || previousHints.length === 0) {
+            set({ hints: sortedHints, currentHintIndex: -1 });
+            return;
+        }
+
+        const previousCurrentHint = previousHints[currentHintIndex];
+        if (!previousCurrentHint) {
+            set({ hints: sortedHints, currentHintIndex: Math.min(currentHintIndex, sortedHints.length - 1) });
+            return;
+        }
+
+        const reconciledIndex = sortedHints.findIndex((hint) =>
+            hint.id === previousCurrentHint.id || hint.hintNumber === previousCurrentHint.hintNumber
+        );
+
+        set({
+            hints: sortedHints,
+            currentHintIndex: reconciledIndex >= 0
+                ? reconciledIndex
+                : Math.min(currentHintIndex, sortedHints.length - 1)
+        });
     },
 
     setCurrentHintIndex: (index: number) => {

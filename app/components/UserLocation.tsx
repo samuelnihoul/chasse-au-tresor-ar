@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useHints, calculateDistance, useUserPosition } from '../hooks/useHints';
+import React, { useEffect, useRef, useState } from 'react';
+import { useHints, calculateDistance } from '../hooks/useHints';
 
 interface Location {
     latitude: number | null;
@@ -9,24 +9,35 @@ interface Location {
     timestamp?: number;
 }
 
+interface Hint {
+    id: number;
+    latitude: number;
+    longitude: number;
+    createdAt: string;
+    hintNumber: number;
+    hint: string;
+    gameMap: string;
+    zoneId: string;
+}
+
 const UserLocation: React.FC = () => {
     const [location, setLocation] = useState<Location>({ latitude: null, longitude: null });
     const [startPosition, setStartPosition] = useState<Location | null>(null);
-    const [distanceFromStart, setDistanceFromStart] = useState<number>(0);
     const [isNearHint, setIsNearHint] = useState<boolean>(false);
     const [caloriesBurned, setCaloriesBurned] = useState<number>(0);
     const [showHintModal, setShowHintModal] = useState<boolean>(false);
-    const [lastHintNumber, setLastHintNumber] = useState<number>(-1);
+    const [modalHint, setModalHint] = useState<Hint | null>(null);
     const [arrowRotation, setArrowRotation] = useState<number>(0);
     const [speed, setSpeed] = useState<number>(0);
-    const [lastLocation, setLastLocation] = useState<Location | null>(null);
+    const lastLocationRef = useRef<Location | null>(null);
+    const startPositionRef = useRef<Location | null>(null);
+    const isNearHintRef = useRef<boolean>(false);
 
     // Constante pour le calcul des calories (60 calories par km de marche)
     const CALORIES_PER_KM = 60;
 
     // Utiliser le hook useHints pour gérer les indices
     const {
-        hints,
         setHints,
         getCurrentHint,
         getNextHint,
@@ -34,9 +45,6 @@ const UserLocation: React.FC = () => {
         distanceToNextHint,
         setDistanceToNextHint
     } = useHints();
-
-    // Utiliser le hook useUserPosition pour mettre à jour la distance
-    useUserPosition();
 
     // Seuil de proximité pour considérer qu'un utilisateur a atteint un indice (en mètres)
     const PROXIMITY_THRESHOLD = 20;
@@ -60,98 +68,6 @@ const UserLocation: React.FC = () => {
         let θ = Math.atan2(y, x);
         θ = toDeg(θ);
         return (θ + 360) % 360;
-    };
-
-    const getLocation = () => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((position) => {
-                const { latitude, longitude } = position.coords;
-                const currentTime = Date.now();
-
-                // Calcul de la vitesse si on a une position précédente
-                if (lastLocation && lastLocation.latitude && lastLocation.longitude) {
-                    const distance = calculateDistance(
-                        lastLocation.latitude,
-                        lastLocation.longitude,
-                        latitude,
-                        longitude
-                    );
-                    const timeDiff = (currentTime - (lastLocation.timestamp || currentTime)) / 1000; // en secondes
-                    if (timeDiff > 0) {
-                        const speedKmh = (distance / timeDiff) * 3.6; // conversion m/s en km/h
-                        setSpeed(speedKmh);
-                    }
-                }
-
-                // Mettre à jour la position actuelle avec le timestamp
-                const newLocation = { latitude, longitude, timestamp: currentTime };
-                setLocation(newLocation);
-                setLastLocation(newLocation);
-
-                // Si c'est la première position, la sauvegarder comme point de départ
-                if (!startPosition) {
-                    setStartPosition(newLocation);
-                }
-
-                // Calculer la distance depuis le point de départ
-                if (startPosition && startPosition.latitude && startPosition.longitude) {
-                    const distance = calculateDistance(
-                        startPosition.latitude,
-                        startPosition.longitude,
-                        latitude,
-                        longitude
-                    );
-                    setDistanceFromStart(distance);
-                    // Calculer les calories brûlées
-                    setCaloriesBurned(Math.round((distance / 1000) * CALORIES_PER_KM));
-                }
-
-                // Calculer la distance jusqu'au prochain indice
-                const nextHintConst = getNextHint();
-                if (nextHintConst && latitude && longitude) {
-                    const distance = calculateDistance(
-                        latitude,
-                        longitude,
-                        nextHintConst.latitude,
-                        nextHintConst.longitude
-                    );
-                    setDistanceToNextHint(distance);
-
-                    // Calculer l'angle pour la flèche
-                    const bearing = calculateBearing(
-                        latitude,
-                        longitude,
-                        nextHintConst.latitude,
-                        nextHintConst.longitude
-                    );
-                    setArrowRotation(bearing);
-
-                    // Vérifier si l'utilisateur est proche de l'indice suivant
-                    if (distance < PROXIMITY_THRESHOLD) {
-                        setIsNearHint(true);
-                        // Si c'est la première fois qu'on détecte la proximité, passer à l'indice suivant
-                        if (!isNearHint) {
-                            const currentHint = getCurrentHint();
-                            if (currentHint && currentHint.hintNumber !== lastHintNumber) {
-                                setShowHintModal(true);
-                                setLastHintNumber(currentHint.hintNumber);
-                            }
-                            nextHint();
-                        }
-                    } else {
-                        setIsNearHint(false);
-                    }
-                }
-            }, (error) => {
-                console.error('Error getting location:', error);
-            }, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            });
-        } else {
-            alert("La géolocalisation n'est pas supportée par ce navigateur.");
-        }
     };
 
     // Charger les indices depuis l'API
@@ -184,15 +100,97 @@ const UserLocation: React.FC = () => {
 
     // Effet pour la géolocalisation
     useEffect(() => {
-        // Première récupération
-        getLocation();
+        if (!navigator.geolocation) {
+            alert("La géolocalisation n'est pas supportée par ce navigateur.");
+            return;
+        }
 
-        // Mise à jour toutes les 2 secondes
-        const interval = setInterval(getLocation, 2000);
+        const watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                const currentTime = Date.now();
 
-        // Nettoyage à la destruction du composant
-        return () => clearInterval(interval);
-    }, [startPosition]); // Ajouter startPosition comme dépendance
+                const previousLocation = lastLocationRef.current;
+                if (previousLocation && previousLocation.latitude !== null && previousLocation.longitude !== null) {
+                    const distance = calculateDistance(
+                        previousLocation.latitude,
+                        previousLocation.longitude,
+                        latitude,
+                        longitude
+                    );
+                    const timeDiff = (currentTime - (previousLocation.timestamp || currentTime)) / 1000;
+                    if (timeDiff > 0) {
+                        setSpeed((distance / timeDiff) * 3.6);
+                    }
+                }
+
+                const newLocation = { latitude, longitude, timestamp: currentTime };
+                setLocation(newLocation);
+                lastLocationRef.current = newLocation;
+
+                if (!startPositionRef.current) {
+                    startPositionRef.current = newLocation;
+                    setStartPosition(newLocation);
+                }
+
+                if (startPositionRef.current?.latitude !== null && startPositionRef.current?.longitude !== null) {
+                    const distanceFromStart = calculateDistance(
+                        startPositionRef.current.latitude,
+                        startPositionRef.current.longitude,
+                        latitude,
+                        longitude
+                    );
+                    setCaloriesBurned(Math.round((distanceFromStart / 1000) * CALORIES_PER_KM));
+                }
+
+                const nextHintConst = getNextHint();
+                if (nextHintConst) {
+                    const distance = calculateDistance(
+                        latitude,
+                        longitude,
+                        nextHintConst.latitude,
+                        nextHintConst.longitude
+                    );
+                    setDistanceToNextHint(distance);
+
+                    const bearing = calculateBearing(
+                        latitude,
+                        longitude,
+                        nextHintConst.latitude,
+                        nextHintConst.longitude
+                    );
+                    setArrowRotation(bearing);
+
+                    if (distance < PROXIMITY_THRESHOLD) {
+                        setIsNearHint(true);
+                        if (!isNearHintRef.current) {
+                            setModalHint(nextHintConst);
+                            setShowHintModal(true);
+                            nextHint();
+                        }
+                        isNearHintRef.current = true;
+                    } else {
+                        setIsNearHint(false);
+                        isNearHintRef.current = false;
+                    }
+                } else {
+                    setDistanceToNextHint(null);
+                    setIsNearHint(false);
+                    isNearHintRef.current = false;
+                }
+            },
+            (error) => {
+                console.error('Error getting location:', error);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 1000
+            }
+        );
+
+        return () => navigator.geolocation.clearWatch(watchId);
+    }, [getNextHint, nextHint, setDistanceToNextHint]);
 
     // Obtenir l'indice actuel
     const currentHint = getCurrentHint();
@@ -204,14 +202,14 @@ const UserLocation: React.FC = () => {
             {showHintModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-purple-900 p-6 rounded-lg max-w-md w-full mx-4">
-                        {currentHint && (
+                        {modalHint && (
                             <>
-                                {currentHint.hintNumber === 0 && (
+                                {modalHint.hintNumber === 0 && (
                                     <h3 className="text-xl font-bold mb-4 text-center text-yellow-400">
                                         Bienvenue dans la chasse au trésor!
                                     </h3>
                                 )}
-                                {currentHint.hint === "FIN" ? (
+                                {modalHint.hint === "FIN" ? (
                                     <>
                                         <h3 className="text-xl font-bold mb-4 text-center text-green-400">
                                             Félicitations! 🎉
@@ -226,13 +224,16 @@ const UserLocation: React.FC = () => {
                                 ) : (
                                     <>
                                         <h3 className="text-xl font-bold mb-4">Nouvel indice atteint!</h3>
-                                        <p className="mb-2">Indice #{currentHint.hintNumber}:</p>
-                                        <p className="mb-4">{currentHint.hint}</p>
-                                        <p className="text-sm mb-4">Carte: {currentHint.gameMap}</p>
+                                        <p className="mb-2">Indice #{modalHint.hintNumber}:</p>
+                                        <p className="mb-4">{modalHint.hint}</p>
+                                        <p className="text-sm mb-4">Carte: {modalHint.gameMap}</p>
                                     </>
                                 )}
                                 <button
-                                    onClick={() => setShowHintModal(false)}
+                                    onClick={() => {
+                                        setShowHintModal(false);
+                                        setModalHint(null);
+                                    }}
                                     className="bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded w-full"
                                 >
                                     Fermer
