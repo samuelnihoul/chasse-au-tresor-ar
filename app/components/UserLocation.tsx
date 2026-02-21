@@ -32,6 +32,8 @@ const UserLocation: React.FC = () => {
     const lastLocationRef = useRef<Location | null>(null);
     const startPositionRef = useRef<Location | null>(null);
     const isNearHintRef = useRef<boolean>(false);
+    const deviceHeadingRef = useRef<number>(0);
+    const targetBearingRef = useRef<number | null>(null);
 
     // Constante pour le calcul des calories (60 calories par km de marche)
     const CALORIES_PER_KM = 60;
@@ -98,6 +100,41 @@ const UserLocation: React.FC = () => {
         return () => clearInterval(interval);
     }, [setHints]);
 
+    // Effet pour obtenir l'orientation de l'appareil (boussole)
+    useEffect(() => {
+        const handleOrientation = (event: DeviceOrientationEvent) => {
+            const eventWithCompass = event as DeviceOrientationEvent & { webkitCompassHeading?: number };
+
+            let heading: number | null = null;
+
+            // iOS Safari
+            if (typeof eventWithCompass.webkitCompassHeading === 'number') {
+                heading = eventWithCompass.webkitCompassHeading;
+            }
+            // Android / autres navigateurs
+            else if (event.alpha !== null) {
+                heading = 360 - event.alpha;
+            }
+
+            if (heading !== null && !Number.isNaN(heading)) {
+                deviceHeadingRef.current = (heading + 360) % 360;
+
+                if (targetBearingRef.current !== null) {
+                    const relativeRotation = (targetBearingRef.current - deviceHeadingRef.current + 360) % 360;
+                    setArrowRotation(relativeRotation);
+                }
+            }
+        };
+
+        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+        window.addEventListener('deviceorientation', handleOrientation, true);
+
+        return () => {
+            window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
+            window.removeEventListener('deviceorientation', handleOrientation, true);
+        };
+    }, []);
+
     // Effet pour la géolocalisation
     useEffect(() => {
         if (!navigator.geolocation) {
@@ -159,7 +196,9 @@ const UserLocation: React.FC = () => {
                         nextHintConst.latitude,
                         nextHintConst.longitude
                     );
-                    setArrowRotation(bearing);
+                    targetBearingRef.current = bearing;
+                    const relativeRotation = (bearing - deviceHeadingRef.current + 360) % 360;
+                    setArrowRotation(relativeRotation);
 
                     if (distance < PROXIMITY_THRESHOLD) {
                         setIsNearHint(true);
@@ -175,6 +214,7 @@ const UserLocation: React.FC = () => {
                     }
                 } else {
                     setDistanceToNextHint(null);
+                    targetBearingRef.current = null;
                     setIsNearHint(false);
                     isNearHintRef.current = false;
                 }
