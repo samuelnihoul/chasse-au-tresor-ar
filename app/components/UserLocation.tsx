@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useHints, calculateDistance } from '../hooks/useHints';
+import ZombieBattle from './ZombieBattle';
 
 interface Location {
     latitude: number | null;
@@ -29,6 +30,7 @@ const UserLocation: React.FC = () => {
     const [modalHint, setModalHint] = useState<Hint | null>(null);
     const [arrowRotation, setArrowRotation] = useState<number>(0);
     const [speed, setSpeed] = useState<number>(0);
+    const [showZombieBattle, setShowZombieBattle] = useState<boolean>(false);
     const lastLocationRef = useRef<Location | null>(null);
     const startPositionRef = useRef<Location | null>(null);
     const isNearHintRef = useRef<boolean>(false);
@@ -81,8 +83,7 @@ const UserLocation: React.FC = () => {
                 // Filtrer les données pour ne garder que les indices valides
                 const validHints = data.filter((hint: any) =>
                     hint.hintNumber >= 0 &&
-                    hint.hint !== "pas encore défini" &&
-                    hint.gameMap !== "pas encore défini"
+                    hint.hint !== "pas encore défini"
                 );
 
                 // Définir les indices sans activer automatiquement le premier
@@ -204,8 +205,14 @@ const UserLocation: React.FC = () => {
                         setIsNearHint(true);
                         if (!isNearHintRef.current) {
                             setModalHint(nextHintConst);
-                            setShowHintModal(true);
-                            nextHint();
+                            
+                            // Special case for hint #2 - show zombie battle!
+                            if (nextHintConst.hintNumber === 2) {
+                                setShowZombieBattle(true);
+                            } else {
+                                setShowHintModal(true);
+                                nextHint();
+                            }
                         }
                         isNearHintRef.current = true;
                     } else {
@@ -235,6 +242,12 @@ const UserLocation: React.FC = () => {
     // Obtenir l'indice actuel
     const currentHint = getCurrentHint();
     const nextHintObj = getNextHint();
+
+    const handleZombieBattleComplete = () => {
+        setShowZombieBattle(false);
+        setShowHintModal(true);
+        nextHint();
+    };
 
     return (
         <div className="bg-opacity-0 rounded-lg p-4 text-white">
@@ -282,6 +295,14 @@ const UserLocation: React.FC = () => {
                         )}
                     </div>
                 </div>
+            )}
+
+            {/* Zombie Battle Modal */}
+            {showZombieBattle && modalHint && (
+                <ZombieBattle 
+                    onComplete={handleZombieBattleComplete}
+                    hint={modalHint.hint}
+                />
             )}
 
             <div className="flex items-center justify-between mb-4">
@@ -351,6 +372,11 @@ const UserLocation: React.FC = () => {
                         <div className="mt-2">
                             <p className="font-semibold">Prochain indice: #{nextHintObj.hintNumber}</p>
                             <p className="text-sm text-gray-300">Direction: Suivez la flèche ↑</p>
+                            {nextHintObj.hintNumber === 2 && distanceToNextHint < 100 && (
+                                <p className="text-red-400 font-bold animate-pulse text-sm">
+                                    ⚠️ Attention! Des grognements étranges se font entendre...
+                                </p>
+                            )}
                             {isNearHint && (
                                 <p className="text-green-400 font-bold animate-pulse">
                                     Vous êtes arrivé à l'indice!
