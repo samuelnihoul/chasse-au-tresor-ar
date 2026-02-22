@@ -709,7 +709,7 @@ const CameraFeed: React.FC = () => {
                         ? `Combat AR actif - Zombies restants: ${activeZombies}`
                         : battleCompleted
                             ? 'Combat du 2e indice termine. Vous pouvez avancer.'
-                            : 'Explorez en AR et rejoignez le prochain indice.'}
+                            : 'Pas d\'ennemi dans les parages'}
                 </div>
 
                 {pacePrompt && (
