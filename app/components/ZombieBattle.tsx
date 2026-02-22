@@ -76,7 +76,7 @@ const ZombieBattle: React.FC<ZombieBattleProps> = ({ onComplete, hint }) => {
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
             <div className="bg-gray-900 border-2 border-red-600 rounded-lg p-6 max-w-lg w-full mx-4">
                 <h2 className="text-2xl font-bold text-center text-red-500 mb-4">
-                    🧟 COMBAT CONTRE LE ZOMBIE! (indice 2)🧟
+                    🧟 COMBAT CONTRE LE ZOMBIE! 🧟
                 </h2>
                 
                 {/* Battle Scene */}
