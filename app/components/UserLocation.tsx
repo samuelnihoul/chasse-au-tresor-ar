@@ -3,6 +3,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useHints, calculateDistance } from '../hooks/useHints';
 import { useZombies } from '../hooks/useZombies';
+import {
+    canAccessHint,
+    STEP_3_LOCKED_MESSAGE,
+    STEP_3_UNLOCKED_MESSAGE
+} from '../config/businessRules';
 
 interface Location {
     latitude: number | null;
@@ -29,6 +34,7 @@ const UserLocation: React.FC = () => {
     const [showHintModal, setShowHintModal] = useState<boolean>(false);
     const [modalHint, setModalHint] = useState<Hint | null>(null);
     const [battleGateMessage, setBattleGateMessage] = useState<string | null>(null);
+    const [battleGateMessageVariant, setBattleGateMessageVariant] = useState<'error' | 'success'>('error');
     const [arrowRotation, setArrowRotation] = useState<number>(0);
     const [speed, setSpeed] = useState<number>(0);
     const lastLocationRef = useRef<Location | null>(null);
@@ -212,8 +218,14 @@ const UserLocation: React.FC = () => {
                     if (distance < PROXIMITY_THRESHOLD) {
                         setIsNearHint(true);
                         if (!isNearHintRef.current) {
-                            if (nextHintConst.hintNumber === 3 && !battleCompleted) {
-                                setBattleGateMessage('⚔️ Éliminez le zombie du 2e indice avant de passer à l\'indice 3 !');
+                            const canAccessNextHint = canAccessHint({
+                                targetHintNumber: nextHintConst.hintNumber,
+                                battleCompleted
+                            });
+
+                            if (!canAccessNextHint) {
+                                setBattleGateMessageVariant('error');
+                                setBattleGateMessage(STEP_3_LOCKED_MESSAGE);
                                 if (battleGateTimeoutRef.current !== null) {
                                     window.clearTimeout(battleGateTimeoutRef.current);
                                 }
@@ -271,6 +283,24 @@ const UserLocation: React.FC = () => {
         };
     }, []);
 
+    useEffect(() => {
+        const nextHintConst = getNextHint();
+        if (!battleCompleted || nextHintConst?.hintNumber !== 3) {
+            return;
+        }
+
+        setBattleGateMessageVariant('success');
+        setBattleGateMessage(STEP_3_UNLOCKED_MESSAGE);
+
+        if (battleGateTimeoutRef.current !== null) {
+            window.clearTimeout(battleGateTimeoutRef.current);
+        }
+
+        battleGateTimeoutRef.current = window.setTimeout(() => {
+            setBattleGateMessage(null);
+        }, 4000);
+    }, [battleCompleted, getNextHint]);
+
     // Obtenir l'indice actuel
     const currentHint = getCurrentHint();
     const nextHintObj = getNextHint();
@@ -324,7 +354,10 @@ const UserLocation: React.FC = () => {
             )}
 
             {battleGateMessage && (
-                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-red-900/90 border border-red-400 px-4 py-2 rounded-lg text-sm font-semibold text-red-100 text-center max-w-sm">
+                <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg text-sm font-semibold text-center max-w-sm ${battleGateMessageVariant === 'success'
+                    ? 'bg-emerald-900/90 border border-emerald-400 text-emerald-100'
+                    : 'bg-red-900/90 border border-red-400 text-red-100'
+                    }`}>
                     {battleGateMessage}
                 </div>
             )}

@@ -703,24 +703,26 @@ const CameraFeed: React.FC = () => {
                 </div>
 
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/65 border border-red-400 text-red-100 px-4 py-2 rounded-lg text-sm font-semibold">
-                    {battleActive
-                        ? `Combat AR actif - Zombies restants: ${activeZombies}`
-                        : battleCompleted
-                            ? 'Combat du 2e indice termine. Vous pouvez avancer.'
-                            : 'Pas d\'ennemi dans les parages'}
+                    <p>
+                        {battleActive
+                            ? `Combat AR actif - Zombies restants: ${activeZombies}`
+                            : battleCompleted
+                                ? 'Combat du 2e indice termine. Vous pouvez avancer.'
+                                : 'Pas d\'ennemi dans les parages'}
+                    </p>
+
+                    {nextHint && distanceToNextHint !== null && (
+                        <p className="mt-1 text-red-50/95 text-xs sm:text-sm">
+                            Indice {nextHint.hintNumber}: {distanceToNextHint < 1000
+                                ? `${Math.round(distanceToNextHint)} m`
+                                : `${(distanceToNextHint / 1000).toFixed(2)} km`}
+                        </p>
+                    )}
                 </div>
 
                 {pacePrompt && (
                     <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-transparent/80 border border-white/60 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg animate-pulse">
                         {pacePrompt}
-                    </div>
-                )}
-
-                {nextHint && distanceToNextHint !== null && (
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm">
-                        Indice {nextHint.hintNumber}: {distanceToNextHint < 1000
-                            ? `${Math.round(distanceToNextHint)} m`
-                            : `${(distanceToNextHint / 1000).toFixed(2)} km`}
                     </div>
                 )}
 
