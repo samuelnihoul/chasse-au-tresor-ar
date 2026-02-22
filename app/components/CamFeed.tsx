@@ -35,10 +35,13 @@ const CameraFeed: React.FC = () => {
     const [showScroll, setShowScroll] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [hitEffects, setHitEffects] = useState<{id: string, x: number, y: number, timestamp: number}[]>([]);
+    const [pacePrompt, setPacePrompt] = useState<string | null>(null);
+    const pacePromptTimeoutRef = useRef<number | null>(null);
 
     // Get current hint using the useHints hook
-    const { getCurrentHint } = useHints();
+    const { getCurrentHint, distanceToNextHint, getNextHint } = useHints();
     const currentHint = getCurrentHint();
+    const nextHint = getNextHint();
 
     // Précharger l'image du zombie
     useEffect(() => {
@@ -53,7 +56,17 @@ const CameraFeed: React.FC = () => {
     }, []);
 
     // Utiliser le hook pour les zombies
-    const { zombies, addZombie, damageZombie, removeZombie, score, updateZombiePositions, resetZombies } = useZombies();
+    const {
+        zombies,
+        addZombie,
+        damageZombie,
+        score,
+        updateZombiePositions,
+        battleActive,
+        battleCompleted,
+        completeHint2Battle
+    } = useZombies();
+    const activeZombies = zombies.filter((zombie) => zombie.active).length;
 
     // Obtenir la position GPS et la partager globalement
     useEffect(() => {
@@ -384,20 +397,17 @@ const CameraFeed: React.FC = () => {
         };
     }, []);
 
-    // Ajouter un seul zombie uniquement au deuxième indice
+    // Combat unique au 2e indice : spawn unique lorsque le combat démarre
     useEffect(() => {
-        if (isPaused) return; // Do not spawn if paused
-        
-        // Vérifier si nous sommes exactement au deuxième indice (hintNumber === 2)
-        const isAtHint2 = currentHint && currentHint.hintNumber === 2;
-        
-        // Si nous ne sommes pas au deuxième indice, nettoyer tous les zombies existants
-        if (!isAtHint2) {
-            resetZombies();
+        if (isPaused || !battleActive || battleCompleted) {
             return;
         }
 
-        // Si nous sommes au deuxième indice et qu'il n'y a pas encore de zombies, en créer un seul
+        const isAtHint2 = currentHint?.hintNumber === 2;
+        if (!isAtHint2) {
+            return;
+        }
+
         const { zombies } = useZombies.getState();
         if (zombies.length === 0) {
             const angle = Math.random() * Math.PI * 2;
@@ -406,7 +416,56 @@ const CameraFeed: React.FC = () => {
             const y = Math.sin(angle) * distance;
             addZombie(x, y);
         }
-    }, [addZombie, isPaused, currentHint, resetZombies]);
+    }, [addZombie, battleActive, battleCompleted, currentHint, isPaused]);
+
+    useEffect(() => {
+        if (!battleActive || zombies.length === 0) {
+            return;
+        }
+
+        if (zombies.every((zombie) => !zombie.active)) {
+            completeHint2Battle();
+        }
+    }, [battleActive, completeHint2Battle, zombies]);
+
+    useEffect(() => {
+        const intervalId = window.setInterval(() => {
+            const { distanceToNextHint: liveDistance, getNextHint: liveGetNextHint } = useHints.getState();
+            const liveNextHint = liveGetNextHint();
+
+            if (!liveNextHint || liveDistance === null) {
+                return;
+            }
+
+            const formattedDistance = liveDistance < 1000
+                ? `${Math.round(liveDistance)} metres`
+                : `${(liveDistance / 1000).toFixed(2)} kilometres`;
+
+            const message = `Indice ${liveNextHint.hintNumber} a ${formattedDistance}. Marchez plus vite.`;
+            setPacePrompt(`Indice ${liveNextHint.hintNumber}: ${formattedDistance} restants. Accelerez le pas!`);
+
+            if (pacePromptTimeoutRef.current !== null) {
+                window.clearTimeout(pacePromptTimeoutRef.current);
+            }
+            pacePromptTimeoutRef.current = window.setTimeout(() => setPacePrompt(null), 6000);
+
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(message);
+                utterance.lang = 'fr-FR';
+                utterance.rate = 1.03;
+                utterance.pitch = 1;
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(utterance);
+            }
+        }, 30000);
+
+        return () => {
+            window.clearInterval(intervalId);
+            if (pacePromptTimeoutRef.current !== null) {
+                window.clearTimeout(pacePromptTimeoutRef.current);
+            }
+        };
+    }, []);
 
     // Effect to handle showing/hiding the scroll with hint
     useEffect(() => {
@@ -496,8 +555,8 @@ const CameraFeed: React.FC = () => {
                         // Ajouter un effet de tir à la position du zombie
                         setHitEffects(prev => [...prev, {
                             id: zombie.id,
-                            x: screenX,
-                            y: screenY,
+                            x: clickX,
+                            y: clickY,
                             timestamp: Date.now()
                         }]);
                     }
@@ -644,6 +703,28 @@ const CameraFeed: React.FC = () => {
                 <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
                     <p className="font-bold">Score: {score}</p>
                 </div>
+
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/65 border border-red-400 text-red-100 px-4 py-2 rounded-lg text-sm font-semibold">
+                    {battleActive
+                        ? `Combat AR actif - Zombies restants: ${activeZombies}`
+                        : battleCompleted
+                            ? 'Combat du 2e indice termine. Vous pouvez avancer.'
+                            : 'Explorez en AR et rejoignez le prochain indice.'}
+                </div>
+
+                {pacePrompt && (
+                    <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-amber-400/90 text-gray-900 px-4 py-2 rounded-lg font-bold text-sm shadow-lg animate-pulse">
+                        {pacePrompt}
+                    </div>
+                )}
+
+                {nextHint && distanceToNextHint !== null && (
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-sm">
+                        Indice {nextHint.hintNumber}: {distanceToNextHint < 1000
+                            ? `${Math.round(distanceToNextHint)} m`
+                            : `${(distanceToNextHint / 1000).toFixed(2)} km`}
+                    </div>
+                )}
 
                 {/* Effet de tir */}
                 {shooting && (

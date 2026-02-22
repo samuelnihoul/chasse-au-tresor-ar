@@ -30,6 +30,9 @@ interface Zombie {
 interface ZombieState {
   zombies: Zombie[];
   score: number;
+  battleActive: boolean;
+  battleCompleted: boolean;
+  battleStartedAtHint2: boolean;
   addZombie: (x: number, y: number) => void;
   removeZombie: (id: string) => void;
   updateZombiePosition: (id: string, x: number, y: number) => void;
@@ -37,6 +40,8 @@ interface ZombieState {
   increaseScore: (points: number) => void;
   resetZombies: () => void;
   updateZombiePositions: () => void;
+  startHint2Battle: () => void;
+  completeHint2Battle: () => void;
 }
 
 const MAX_ZOMBIES = 10; // Limite réduite à 10 zombies maximum
@@ -44,6 +49,9 @@ const MAX_ZOMBIES = 10; // Limite réduite à 10 zombies maximum
 export const useZombies = create<ZombieState>((set) => ({
   zombies: [],
   score: 0,
+  battleActive: false,
+  battleCompleted: false,
+  battleStartedAtHint2: false,
 
   addZombie: (x: number, y: number) => {
     // Utiliser les coordonnées GPS globales si disponibles
@@ -127,10 +135,15 @@ export const useZombies = create<ZombieState>((set) => ({
       // Si le zombie est mort, augmenter le score
       const zombie = state.zombies.find(z => z.id === id);
       if (zombie && zombie.health > 0 && (zombie.health - damage) <= 0) {
+        const aliveZombiesAfterHit = updatedZombies.filter((item) => item.active).length;
+        const battleFinished = state.battleActive && aliveZombiesAfterHit === 0;
+
         // Le zombie vient d'être tué
         return {
           zombies: updatedZombies,
-          score: state.score + 10 // 10 points par zombie tué
+          score: state.score + 10, // 10 points par zombie tué
+          battleActive: battleFinished ? false : state.battleActive,
+          battleCompleted: battleFinished ? true : state.battleCompleted
         };
       }
 
@@ -147,7 +160,26 @@ export const useZombies = create<ZombieState>((set) => ({
   resetZombies: () => {
     set({
       zombies: [],
-      score: 0
+      score: 0,
+      battleActive: false,
+      battleCompleted: false,
+      battleStartedAtHint2: false
+    });
+  },
+
+  startHint2Battle: () => {
+    set((state) => ({
+      battleActive: true,
+      battleCompleted: false,
+      battleStartedAtHint2: state.battleStartedAtHint2 || true
+    }));
+  },
+
+  completeHint2Battle: () => {
+    set({
+      battleActive: false,
+      battleCompleted: true,
+      battleStartedAtHint2: true
     });
   },
 

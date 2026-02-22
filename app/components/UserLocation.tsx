@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useHints, calculateDistance } from '../hooks/useHints';
+import { useZombies } from '../hooks/useZombies';
 
 interface Location {
     latitude: number | null;
@@ -27,6 +28,7 @@ const UserLocation: React.FC = () => {
     const [caloriesBurned, setCaloriesBurned] = useState<number>(0);
     const [showHintModal, setShowHintModal] = useState<boolean>(false);
     const [modalHint, setModalHint] = useState<Hint | null>(null);
+    const [battleGateMessage, setBattleGateMessage] = useState<string | null>(null);
     const [arrowRotation, setArrowRotation] = useState<number>(0);
     const [speed, setSpeed] = useState<number>(0);
     const lastLocationRef = useRef<Location | null>(null);
@@ -34,6 +36,7 @@ const UserLocation: React.FC = () => {
     const isNearHintRef = useRef<boolean>(false);
     const deviceHeadingRef = useRef<number>(0);
     const targetBearingRef = useRef<number | null>(null);
+    const battleGateTimeoutRef = useRef<number | null>(null);
 
     // Constante pour le calcul des calories (60 calories par km de marche)
     const CALORIES_PER_KM = 60;
@@ -47,6 +50,12 @@ const UserLocation: React.FC = () => {
         distanceToNextHint,
         setDistanceToNextHint
     } = useHints();
+
+    const {
+        battleCompleted,
+        battleStartedAtHint2,
+        startHint2Battle
+    } = useZombies();
 
     // Seuil de proximité pour considérer qu'un utilisateur a atteint un indice (en mètres)
     const PROXIMITY_THRESHOLD = 20;
@@ -203,9 +212,24 @@ const UserLocation: React.FC = () => {
                     if (distance < PROXIMITY_THRESHOLD) {
                         setIsNearHint(true);
                         if (!isNearHintRef.current) {
+                            if (nextHintConst.hintNumber === 3 && !battleCompleted) {
+                                setBattleGateMessage('⚔️ Éliminez le zombie du 2e indice avant de passer à l\'indice 3 !');
+                                if (battleGateTimeoutRef.current !== null) {
+                                    window.clearTimeout(battleGateTimeoutRef.current);
+                                }
+                                battleGateTimeoutRef.current = window.setTimeout(() => {
+                                    setBattleGateMessage(null);
+                                }, 4000);
+                                return;
+                            }
+
                             setModalHint(nextHintConst);
                             setShowHintModal(true);
                             nextHint();
+
+                            if (nextHintConst.hintNumber === 2 && !battleStartedAtHint2) {
+                                startHint2Battle();
+                            }
                         }
                         isNearHintRef.current = true;
                     } else {
@@ -230,7 +254,22 @@ const UserLocation: React.FC = () => {
         );
 
         return () => navigator.geolocation.clearWatch(watchId);
-    }, [getNextHint, nextHint, setDistanceToNextHint]);
+    }, [
+        battleCompleted,
+        battleStartedAtHint2,
+        getNextHint,
+        nextHint,
+        setDistanceToNextHint,
+        startHint2Battle
+    ]);
+
+    useEffect(() => {
+        return () => {
+            if (battleGateTimeoutRef.current !== null) {
+                window.clearTimeout(battleGateTimeoutRef.current);
+            }
+        };
+    }, []);
 
     // Obtenir l'indice actuel
     const currentHint = getCurrentHint();
@@ -281,6 +320,12 @@ const UserLocation: React.FC = () => {
                             </>
                         )}
                     </div>
+                </div>
+            )}
+
+            {battleGateMessage && (
+                <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-red-900/90 border border-red-400 px-4 py-2 rounded-lg text-sm font-semibold text-red-100 text-center max-w-sm">
+                    {battleGateMessage}
                 </div>
             )}
 
