@@ -666,7 +666,7 @@ const CameraFeed: React.FC = () => {
                                 : 'Pas d\'ennemi dans les parages'}
                     </p>
 
-                    {nextHint && distanceToNextHint !== null && (
+                    {!battleActive &&nextHint && distanceToNextHint !== null && (
                         <p className="mt-1 text-red-50/95 text-xs sm:text-sm">
                             Indice {nextHint.hintNumber}: {distanceToNextHint < 1000
                                 ? `${Math.round(distanceToNextHint)} m`
