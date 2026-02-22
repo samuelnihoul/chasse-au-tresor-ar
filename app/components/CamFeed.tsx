@@ -441,23 +441,27 @@ const CameraFeed: React.FC = () => {
                 ? `${Math.round(liveDistance)} metres`
                 : `${(liveDistance / 1000).toFixed(2)} kilometres`;
 
-            const message = `Indice ${liveNextHint.hintNumber} a ${formattedDistance}. Marchez plus vite.`;
             setPacePrompt(`Indice ${liveNextHint.hintNumber}: ${formattedDistance} restants. Accelerez le pas!`);
 
             if (pacePromptTimeoutRef.current !== null) {
                 window.clearTimeout(pacePromptTimeoutRef.current);
             }
-            pacePromptTimeoutRef.current = window.setTimeout(() => setPacePrompt(null), 6000);
-
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(message);
-                utterance.lang = 'fr-FR';
-                utterance.rate = 1.03;
-                utterance.pitch = 1;
-                window.speechSynthesis.cancel();
-                window.speechSynthesis.speak(utterance);
-            }
+            pacePromptTimeoutRef.current = window.setTimeout(() => setPacePrompt(null), 2000);
         }, 30000);
+
+        // Also trigger immediately on mount
+        const { distanceToNextHint: liveDistance, getNextHint: liveGetNextHint } = useHints.getState();
+        const liveNextHint = liveGetNextHint();
+
+        if (liveNextHint && liveDistance !== null) {
+            const formattedDistance = liveDistance < 1000
+                ? `${Math.round(liveDistance)} metres`
+                : `${(liveDistance / 1000).toFixed(2)} kilometres`;
+
+            setPacePrompt(`Indice ${liveNextHint.hintNumber}: ${formattedDistance} restants. Accelerez le pas!`);
+
+            pacePromptTimeoutRef.current = window.setTimeout(() => setPacePrompt(null), 2000);
+        }
 
         return () => {
             window.clearInterval(intervalId);
@@ -627,8 +631,7 @@ const CameraFeed: React.FC = () => {
                 <div className="relative">
                     <img
                         src="/scroll1.png"
-                        alt="Scroll"
-                        className="w-80 h-auto"
+                        className="w-96 h-auto"
                     />
                     <div className="absolute inset-0 flex flex-col items-center justify-center px-16 pt-12 pb-20 text-center">
                         <h3 className="text-xl font-bold mb-2 text-gray-800">Indice #{currentHint.hintNumber}</h3>
@@ -699,11 +702,6 @@ const CameraFeed: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Score */}
-                <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
-                    <p className="font-bold">Score: {score}</p>
-                </div>
-
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/65 border border-red-400 text-red-100 px-4 py-2 rounded-lg text-sm font-semibold">
                     {battleActive
                         ? `Combat AR actif - Zombies restants: ${activeZombies}`
@@ -713,7 +711,7 @@ const CameraFeed: React.FC = () => {
                 </div>
 
                 {pacePrompt && (
-                    <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-amber-400/90 text-gray-900 px-4 py-2 rounded-lg font-bold text-sm shadow-lg animate-pulse">
+                    <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-transparent/80 border border-white/60 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg animate-pulse">
                         {pacePrompt}
                     </div>
                 )}
@@ -730,14 +728,6 @@ const CameraFeed: React.FC = () => {
                 {shooting && (
                     <div className="absolute top-0 left-0 w-full h-full bg-red-500 bg-opacity-10"></div>
                 )}
-
-                {/* Pause Button */}
-                <button
-                    onClick={() => setIsPaused((prev) => !prev)}
-                    className={`absolute top-4 left-4 px-4 py-2 rounded-lg font-bold shadow-lg transition-all duration-300 ${isPaused ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}
-                >
-                    {isPaused ? 'Reprendre' : 'Pause'}
-                </button>
             </div>
             {renderHintScroll()}
         </div>
