@@ -6,7 +6,6 @@ import UserLocation from './components/UserLocation';
 import CameraFeed from './components/CamFeed';
 import StoreCoordinatesButton from './components/StoreCoordinatesButton';
 import GameInstructions from './components/GameInstructions';
-import { useZombies } from './hooks/useZombies';
 
 interface Coordinate {
     id: number;
@@ -22,7 +21,6 @@ interface Coordinate {
 export default function Home() {
     const [coordinates, setCoordinates] = useState<Coordinate[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const { score } = useZombies();
 
     useEffect(() => {
         const fetchCoordinates = async () => {
