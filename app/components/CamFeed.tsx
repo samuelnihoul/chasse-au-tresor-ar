@@ -74,6 +74,51 @@ const CameraFeed: React.FC = () => {
         };
     }, []);
 
+    // Ajouter des zombies périodiquement - seulement après le deuxième indice
+    useEffect(() => {
+        if (isPaused) return; // Do not spawn if paused
+        
+        // Vérifier si nous sommes au-delà du deuxième indice
+        const shouldSpawnZombies = currentHint && currentHint.hintNumber > 1;
+        
+        // Si nous ne sommes pas au-delà du deuxième indice, nettoyer tous les zombies existants
+        if (!shouldSpawnZombies) {
+            resetZombies();
+            return;
+        }
+
+        const ZOMBIE_SPAWN_INTERVAL = 3000; // Réduit de 8000 à 3000 ms (3 secondes) pour plus de zombies
+
+        // Ajouter 5 zombies initiaux au démarrage (seulement si on est au-delà du deuxième indice)
+        for (let i = 0; i < 5; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 0.5 + Math.random() * 0.5;
+            const x = Math.cos(angle) * distance;
+            const y = Math.sin(angle) * distance;
+            addZombie(x, y);
+        }
+
+        const zombieInterval = setInterval(() => {
+            // Créer un zombie à une position aléatoire autour de l'écran
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 0.5 + Math.random() * 0.5; // Distance entre 0.5 et 1 unité
+            const x = Math.cos(angle) * distance;
+            const y = Math.sin(angle) * distance;
+
+            // Ajouter deux zombies à chaque intervalle au lieu d'un seul
+            addZombie(x, y);
+
+            // Ajouter un second zombie dans une direction légèrement différente
+            const angle2 = (angle + Math.PI / 4) % (Math.PI * 2);
+            const x2 = Math.cos(angle2) * distance;
+            const y2 = Math.sin(angle2) * distance;
+            addZombie(x2, y2);
+        }, ZOMBIE_SPAWN_INTERVAL);
+
+        return () => {
+            clearInterval(zombieInterval);
+        };
+    }, [addZombie, isPaused, currentHint, resetZombies]);
 
     // Effect to handle showing/hiding the scroll with hint
     useEffect(() => {
