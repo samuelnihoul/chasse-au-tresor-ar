@@ -35,8 +35,6 @@ const CameraFeed: React.FC = () => {
     const [showScroll, setShowScroll] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [hitEffects, setHitEffects] = useState<{id: string, x: number, y: number, timestamp: number}[]>([]);
-    const [pacePrompt, setPacePrompt] = useState<string | null>(null);
-    const pacePromptTimeoutRef = useRef<number | null>(null);
 
     // Get current hint using the useHints hook
     const { getCurrentHint, distanceToNextHint, getNextHint } = useHints();
@@ -428,49 +426,6 @@ const CameraFeed: React.FC = () => {
         }
     }, [battleActive, completeHint2Battle, zombies]);
 
-    useEffect(() => {
-        const intervalId = window.setInterval(() => {
-            const { distanceToNextHint: liveDistance, getNextHint: liveGetNextHint } = useHints.getState();
-            const liveNextHint = liveGetNextHint();
-
-            if (!liveNextHint || liveDistance === null) {
-                return;
-            }
-
-            const formattedDistance = liveDistance < 1000
-                ? `${Math.round(liveDistance)} metres`
-                : `${(liveDistance / 1000).toFixed(2)} kilometres`;
-
-            setPacePrompt(`Indice ${liveNextHint.hintNumber}: ${formattedDistance} restants. Accelerez le pas!`);
-
-            if (pacePromptTimeoutRef.current !== null) {
-                window.clearTimeout(pacePromptTimeoutRef.current);
-            }
-            pacePromptTimeoutRef.current = window.setTimeout(() => setPacePrompt(null), 2000);
-        }, 30000);
-
-        // Also trigger immediately on mount
-        const { distanceToNextHint: liveDistance, getNextHint: liveGetNextHint } = useHints.getState();
-        const liveNextHint = liveGetNextHint();
-
-        if (liveNextHint && liveDistance !== null) {
-            const formattedDistance = liveDistance < 1000
-                ? `${Math.round(liveDistance)} metres`
-                : `${(liveDistance / 1000).toFixed(2)} kilometres`;
-
-            setPacePrompt(`Indice ${liveNextHint.hintNumber}: ${formattedDistance} restants. Accelerez le pas!`);
-
-            pacePromptTimeoutRef.current = window.setTimeout(() => setPacePrompt(null), 2000);
-        }
-
-        return () => {
-            window.clearInterval(intervalId);
-            if (pacePromptTimeoutRef.current !== null) {
-                window.clearTimeout(pacePromptTimeoutRef.current);
-            }
-        };
-    }, []);
-
     // Effect to handle showing/hiding the scroll with hint
     useEffect(() => {
         if (currentHint) {
@@ -719,12 +674,6 @@ const CameraFeed: React.FC = () => {
                         </p>
                     )}
                 </div>
-
-                {pacePrompt && (
-                    <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-transparent/80 border border-white/60 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-lg animate-pulse">
-                        {pacePrompt}
-                    </div>
-                )}
 
                 {/* Effet de tir */}
                 {shooting && (
