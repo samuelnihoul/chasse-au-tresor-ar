@@ -26,7 +26,9 @@ const CameraFeed: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
     const [shooting, setShooting] = useState(false);
+    const [crosshairOffset, setCrosshairOffset] = useState({ x: 0, y: 0 });
     const animationFrameRef = useRef<number | null>(null);
+    const shootResetTimeoutRef = useRef<number | null>(null);
     const lastUpdateRef = useRef<number>(0);
     const zombieImageRef = useRef<HTMLImageElement | null>(null);
     const scrollImageRef = useRef<HTMLImageElement | null>(null);
@@ -387,6 +389,9 @@ const CameraFeed: React.FC = () => {
         startVideo();
 
         return () => {
+            if (shootResetTimeoutRef.current !== null) {
+                window.clearTimeout(shootResetTimeoutRef.current);
+            }
             if (videoRef.current && videoRef.current.srcObject) {
                 const stream = videoRef.current.srcObject as MediaStream;
                 const tracks = stream.getTracks();
@@ -525,7 +530,18 @@ const CameraFeed: React.FC = () => {
 
         // Effet visuel de tir amélioré
         setShooting(true);
-        setTimeout(() => setShooting(false), 200);
+        const recoilX = (Math.random() - 0.5) * 12;
+        const recoilY = -6 - Math.random() * 4;
+        setCrosshairOffset({ x: recoilX, y: recoilY });
+
+        if (shootResetTimeoutRef.current !== null) {
+            window.clearTimeout(shootResetTimeoutRef.current);
+        }
+
+        shootResetTimeoutRef.current = window.setTimeout(() => {
+            setShooting(false);
+            setCrosshairOffset({ x: 0, y: 0 });
+        }, 200);
         
         // Ajouter un effet de tir à la position du clic même si aucun zombie n'est touché
         if (!hitZombie) {
@@ -638,22 +654,25 @@ const CameraFeed: React.FC = () => {
             >
                 {/* Viseur amélioré avec animations */}
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                    <div className={`relative w-16 h-16 ${shooting ? 'animate-pulse' : ''}`}>
+                    <div
+                        className={`relative w-10 h-10 transition-transform duration-150 ${shooting ? 'animate-pulse' : ''}`}
+                        style={{ transform: `translate(${crosshairOffset.x}px, ${crosshairOffset.y}px)` }}
+                    >
                         {/* Lignes horizontales et verticales */}
                         <div className={`absolute top-1/2 left-0 right-0 h-0.5 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-y-1/2 transition-colors duration-200`}></div>
                         <div className={`absolute left-1/2 top-0 bottom-0 w-0.5 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-x-1/2 transition-colors duration-200`}></div>
                         
                         {/* Cercle extérieur */}
-                        <div className={`absolute inset-0 border-2 rounded-full ${shooting ? 'border-red-500' : 'border-white'} transition-colors duration-200`}></div>
+                        <div className={`absolute inset-0 border rounded-full ${shooting ? 'border-red-500' : 'border-white'} transition-colors duration-200`}></div>
                         
                         {/* Point central */}
-                        <div className={`absolute top-1/2 left-1/2 w-2 h-2 rounded-full ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-x-1/2 -translate-y-1/2 transition-colors duration-200`}></div>
+                        <div className={`absolute top-1/2 left-1/2 w-1.5 h-1.5 rounded-full ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-x-1/2 -translate-y-1/2 transition-colors duration-200`}></div>
                         
                         {/* Coins pour un look plus professionnel */}
-                        <div className={`absolute top-0 left-1/2 w-3 h-0.5 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-x-1/2 transition-colors duration-200`}></div>
-                        <div className={`absolute bottom-0 left-1/2 w-3 h-0.5 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-x-1/2 transition-colors duration-200`}></div>
-                        <div className={`absolute left-0 top-1/2 w-0.5 h-3 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-y-1/2 transition-colors duration-200`}></div>
-                        <div className={`absolute right-0 top-1/2 w-0.5 h-3 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-y-1/2 transition-colors duration-200`}></div>
+                        <div className={`absolute top-0 left-1/2 w-2 h-0.5 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-x-1/2 transition-colors duration-200`}></div>
+                        <div className={`absolute bottom-0 left-1/2 w-2 h-0.5 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-x-1/2 transition-colors duration-200`}></div>
+                        <div className={`absolute left-0 top-1/2 w-0.5 h-2 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-y-1/2 transition-colors duration-200`}></div>
+                        <div className={`absolute right-0 top-1/2 w-0.5 h-2 ${shooting ? 'bg-red-500' : 'bg-white'} transform -translate-y-1/2 transition-colors duration-200`}></div>
                     </div>
                 </div>
 
